@@ -1,32 +1,30 @@
-var config = require('./db-config.js');
-var mysql = require('mysql');
+const { Pool } = require('pg');
+const config = require('./db-config.js');
 
-config.connectionLimit = 10;
-var connection = mysql.createPool(config);
+const pool = new Pool(config);
 
 /* -------------------------------------------------- */
 /* ------------------- Route Handlers --------------- */
 /* -------------------------------------------------- */
 
 /* ---- (Dashboard) ---- */
-function getTenRestaurants(req, res) {
-  var query = `
+async function getTenRestaurants(req, res) {
+  const query = `
     SELECT restaurant_id
     FROM restaurants
-    LIMIT 1;
+    LIMIT 10;
   `;
-  connection.query(query, (err, rows) => {
-    if (err) {
-      console.log(err);
-      res.status(500).send("Database query failed.");
-    } else {
-      res.json(rows);
-    }
-  });
+
+  try {
+    console.log("Executing query for /restaurants...");
+    const result = await pool.query(query); 
+    res.json(result.rows); 
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).send("Database query failed.");
+  }
 }
 
-
-// The exported functions, which can be accessed in index.js.
 module.exports = {
-  getTenRestaurants: getTenRestaurants
-}
+  getTenRestaurants,
+};
