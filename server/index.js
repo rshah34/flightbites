@@ -18,6 +18,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // routes.restaurants, specified in routes.js.
 app.get('/restaurants', routes.getTenRestaurants);
 
+/* ---- (Complex Routes) ---- */
+app.get('/layover-restaurants', routes.getLayoverRestaurants);
+app.get('/food-tour-flights', routes.getFoodTourFlights);
+app.get('/good-restaurants-destinations', routes.getGoodRestaurantDestinations);
+app.get('/three-city-flight-routes', routes.getThreeCityFlightRoutes);
+
 app.listen(8081, () => {
 	console.log(`Server listening on PORT 8081`);
 });
