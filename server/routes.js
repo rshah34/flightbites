@@ -283,9 +283,86 @@ async function getThreeCityFlightRoutes(req, res) {
   }
 }
 
+/* ---- Top Three-City Paths by High-Rated Restaurants ---- */
+async function getTopThreeCityPaths(req, res) {
+  const {
+    limit = 25
+  } = req.query;
+
+  const query = `
+    SELECT 
+      a1.city_name as start_city,
+      a1.state_name as start_state,
+      a2.city_name as connection_city,
+      a2.state_name as connection_state,
+      a3.city_name as final_city,
+      a3.state_name as final_state,
+      a1.high_rated_count + a2.high_rated_count + a3.high_rated_count as total_high_rated_restaurants
+    FROM flights f1
+    JOIN flights f2 
+      ON f1.dest_airport_id = f2.origin_airport_id
+      AND f1.flight_date = f2.flight_date
+    JOIN mv_high_rated_cities a1 ON f1.origin_airport_id = a1.airport_id
+    JOIN mv_high_rated_cities a2 ON f1.dest_airport_id = a2.airport_id
+    JOIN mv_high_rated_cities a3 ON f2.dest_airport_id = a3.airport_id
+    ORDER BY total_high_rated_restaurants DESC
+    LIMIT $1;
+  `;
+
+  try {
+    console.log("Executing query for /top-3-city-flight-paths...");
+    const result = await pool.query(query, [limit]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+/* ---- Top Cities with High-Rated Restaurants ---- */
+async function getTopRestaurantCities(req, res) {
+  const {
+    limit = 10
+  } = req.query;
+
+  const query = `
+    SELECT 
+      city,
+      state,
+      high_rating_count as high_rating_restaurant_count,
+      avg_rating,
+      avg_reviews,
+      ROUND(
+        (avg_rating * high_rating_count * LOG(avg_reviews + 1))::numeric,
+        2
+      ) as weighted_score
+    FROM mv_restaurant_stats
+    ORDER BY weighted_score DESC
+    LIMIT $1;
+  `;
+
+  try {
+    console.log("Executing query for /top-cities-with-high-rated-restaurants...");
+    const result = await pool.query(query, [limit]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
 module.exports = {
   getTenRestaurants,
   getLayoverRestaurants,
   getFoodTourFlights,
   getGoodRestaurantDestinations,
+  getThreeCityFlightRoutes,
+  getTopThreeCityPaths,
+  getTopRestaurantCities
 };
