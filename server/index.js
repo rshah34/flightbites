@@ -23,6 +23,8 @@ app.get('/layover-restaurants', routes.getLayoverRestaurants);
 app.get('/food-tour-flights', routes.getFoodTourFlights);
 app.get('/good-restaurants-destinations', routes.getGoodRestaurantDestinations);
 app.get('/three-city-flight-routes', routes.getThreeCityFlightRoutes);
+app.get('/top-3-city-flight-paths', routes.getTopThreeCityPaths);
+app.get('/top-cities-with-high-rated-restaurants', routes.getTopRestaurantCities);
 
 app.listen(8081, () => {
 	console.log(`Server listening on PORT 8081`);
