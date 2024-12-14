@@ -31,7 +31,7 @@ export default function PageNavbar(props) {
 	return (
 		<div className="PageNavbar">
 			<nav className="navbar navbar-expand-lg navbar-light bg-light">
-				<span className="navbar-brand center">CIS550 Exercise 3</span>
+				<span className="navbar-brand center">FlightBites</span>
 				<div className="collapse navbar-collapse" id="navbarNavAltMarkup">
 					<div className="navbar-nav">
 						{navDivs}

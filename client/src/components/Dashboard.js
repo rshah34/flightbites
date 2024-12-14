@@ -14,7 +14,7 @@ export default function Dashboard(props) {
       .then(data => {
         const restaurantDivs = data.map((restaurant, i) => (
           <div key={i} className='restaurant'>
-            <div className='restaurant-id'>ID: {restaurant.restaurant_id}</div>
+            <div className='restaurant-name'>{restaurant.name}</div>
           </div>
         ));
 
@@ -31,7 +31,7 @@ export default function Dashboard(props) {
         <br></br>
         <div className='jumbotron less-headspace'>
           <div className='restaurants-container'>
-            <h3>Top 10 Restaurant IDs</h3>
+            <h3>10 Restaurant Names</h3>
             <div className='results-container' id='results'>
               {restaurants} {/* Render restaurant elements */}
             </div>

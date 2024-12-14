@@ -10,7 +10,7 @@ const pool = new Pool(config);
 /* ---- (Dashboard) ---- */
 async function getTenRestaurants(req, res) {
   const query = `
-    SELECT restaurant_id
+    SELECT name
     FROM restaurants
     LIMIT 10;
   `;
@@ -288,4 +288,5 @@ module.exports = {
   getLayoverRestaurants,
   getFoodTourFlights,
   getGoodRestaurantDestinations,
+  getThreeCityFlightRoutes
 };
