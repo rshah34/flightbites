@@ -10,7 +10,8 @@ export default function PageNavbar({ active }) {
     { name: 'Food Tours', path: '/food-tour-flights' },
     { name: 'Three-City Routes', path: '/three-city-routes' },
     { name: 'Top Cities', path: '/top-restaurant-cities' },
-    { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' }
+    { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' },
+	{ name: 'Top 3 City Flight Paths', path: '/top-3-city-flight-paths' }
   ];
 
   return (
