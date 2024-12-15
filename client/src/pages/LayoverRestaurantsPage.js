@@ -22,7 +22,6 @@ const config = require('../config.json');
 export default function LayoverRestaurantsPage() {
   const [originCity, setOriginCity] = useState('');
   const [destinationCity, setDestinationCity] = useState('');
-  const [date, setDate] = useState('');
   const [minLayover, setMinLayover] = useState(120);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +34,6 @@ export default function LayoverRestaurantsPage() {
     const params = new URLSearchParams({
       origin_city: originCity,
       destination_city: destinationCity,
-      date: date,
       min_layover_duration: minLayover
     });
 
@@ -62,7 +60,7 @@ export default function LayoverRestaurantsPage() {
         <Box sx={{ width: '100%', p: 3, bgcolor: 'white', borderRadius: 2, boxShadow: 2, mb: 4 }}>
           <Typography variant="h4" gutterBottom>Find Restaurants During Layovers</Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Origin City"
@@ -70,7 +68,7 @@ export default function LayoverRestaurantsPage() {
                 onChange={(e) => setOriginCity(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Destination City"
@@ -78,17 +76,7 @@ export default function LayoverRestaurantsPage() {
                 onChange={(e) => setDestinationCity(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Flight Date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 type="number"
