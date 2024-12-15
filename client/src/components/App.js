@@ -8,6 +8,9 @@ import GoodRestaurantDestinationsPage from '../pages/GoodRestaurantDestinationsP
 import TopThreeCityPathsPage from '../pages/TopThreeCityFlightPathsPage';
 import OpenRestaurantsPage from '../pages/OpenRestaurantsPage';
 import DiverseLayoversPage from '../pages/DiverseLayoversPage';
+import PopularChainDestination from '../pages/PopularChainDestination';
+import DestinationPage from '../pages/DestinationPage';
+
 
 function App() {
   return (
@@ -19,9 +22,11 @@ function App() {
         <Route path="/three-city-flight-routes" component={ThreeCityFlightRoutesPage} />
         <Route path="/top-restaurant-cities" component={TopRestaurantCitiesPage} />
         <Route path="/good-restaurant-destinations" component={GoodRestaurantDestinationsPage} />
-		<Route path="/top-3-city-flight-paths" component={TopThreeCityPathsPage} />
+        <Route path="/top-3-city-flight-paths" component={TopThreeCityPathsPage} />
         <Route path="/top-cities-with-open-restaurants" component={OpenRestaurantsPage} />
         <Route path="/diverse-dining-layovers" component={DiverseLayoversPage} />
+        <Route path="/flights-to-cities-with-popular-chains" component={PopularChainDestination} />
+        <Route path="/destination-scores" component={DestinationPage} />
       </Switch>
     </BrowserRouter>
   );

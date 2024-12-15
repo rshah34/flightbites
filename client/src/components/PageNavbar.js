@@ -11,6 +11,8 @@ export default function PageNavbar() {
     { name: 'Layover Restaurants', path: '/layover-restaurants' },
     { name: 'Food Tours', path: '/food-tour-flights' },
     { name: 'Three-City Routes', path: '/three-city-flight-routes' },
+    { name: 'Popular chain Destinations', path: '/flights-to-cities-with-popular-chains'},
+    { name: 'Destination Scores', path: '/destination-scores' },
     { name: 'Top Cities', path: '/top-restaurant-cities' },
     { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' },
     { name: 'Top 3 City Flight Paths', path: '/top-3-city-flight-paths' },

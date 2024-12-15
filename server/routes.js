@@ -246,25 +246,65 @@ async function getGoodRestaurantDestinations(req, res) {
 
 /* ---- Three-City Flight Routes ---- */
 async function getThreeCityFlightRoutes(req, res) {
-  try {
-    const { limit = 5 } = req.query;
-    const query = `
-      SELECT DISTINCT 
-        f1.origin_city_name as city1,
-        f1.dest_city_name as city2,
-        f2.dest_city_name as city3
+  const {
+    min_restaurants_per_city = 3,
+    min_stars = 3.5,
+    min_available_days = 5,
+    limit = 25
+  } = req.query;
+
+  const query = `
+    WITH good_restaurants AS (
+      SELECT city, state, COUNT(*) AS restaurant_count, AVG(stars) AS avg_rating
+      FROM restaurants
+      WHERE stars >= $1 AND is_open = TRUE
+      GROUP BY city, state
+      HAVING COUNT(*) >= $2
+    ),
+    flight_combinations AS (
+      SELECT 
+        a1.city_name AS start_city,
+        a2.city_name AS connection_city,
+        a3.city_name AS final_city,
+        COUNT(DISTINCT f1.flight_date) AS available_days
       FROM flights f1
-      JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-      LIMIT $1
-    `;
-    
-    const result = await pool.query(query, [limit]);
+      JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id AND f1.flight_date = f2.flight_date
+      JOIN airports a1 ON f1.origin_airport_id = a1.airport_id
+      JOIN airports a2 ON f1.dest_airport_id = a2.airport_id
+      JOIN airports a3 ON f2.dest_airport_id = a3.airport_id
+      WHERE a1.city_name <> a3.city_name
+      GROUP BY a1.city_name, a2.city_name, a3.city_name
+      HAVING COUNT(DISTINCT f1.flight_date) >= $3
+    )
+    SELECT 
+      fc.start_city,
+      fc.connection_city,
+      fc.final_city,
+      gr1.restaurant_count AS origin_good_food,
+      gr2.restaurant_count AS connection_good_food,
+      gr3.restaurant_count AS destination_good_food,
+      fc.available_days,
+      ROUND((gr1.avg_rating + gr2.avg_rating + gr3.avg_rating) / 3, 2) AS route_avg_rating,
+      ROUND((gr1.restaurant_count + gr2.restaurant_count + gr3.restaurant_count) / 3.0, 2) * fc.available_days AS route_score
+    FROM flight_combinations fc
+    JOIN good_restaurants gr1 ON fc.start_city = gr1.city
+    JOIN good_restaurants gr2 ON fc.connection_city = gr2.city
+    JOIN good_restaurants gr3 ON fc.final_city = gr3.city
+    ORDER BY route_score DESC
+    LIMIT $4;
+  `;
+
+  const values = [parseFloat(min_stars), parseInt(min_restaurants_per_city, 10), parseInt(min_available_days, 10), parseInt(limit, 10)];
+
+  try {
+    console.log("Executing query for /three-city-flight-routes...");
+    const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
-    console.error('Database query error:', err);
-    res.status(500).json({ error: 'Database query failed' });
+    console.error("Database query failed:", err);
+    res.status(500).json({ error: "Database query failed", message: err.message });
   }
-};
+}
 
 /* ---- Top Three-City Paths by High-Rated Restaurants ---- */
 async function getTopThreeCityPaths(req, res) {
@@ -295,6 +335,52 @@ async function getTopThreeCityPaths(req, res) {
   try {
     console.log("Executing query for /top-3-city-flight-paths...");
     const result = await pool.query(query, [limit]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+/* ---- Popular Chain Destinations ---- */
+async function getPopularChainDestinations(req, res) {
+  const { min_chain_count = 3, limit = 15 } = req.query;
+
+  const query = `
+    WITH chain_locations AS (
+      SELECT
+        rc.category AS chain_name,
+        r.city,
+        r.state,
+        COUNT(*) AS location_count
+      FROM restaurant_categories rc
+      JOIN restaurants r ON rc.restaurant_id = r.restaurant_id
+      WHERE rc.category IS NOT NULL
+      GROUP BY rc.category, r.city, r.state
+      HAVING COUNT(*) >= $1
+    )
+    SELECT
+      f.flight_id,
+      a1.city_name AS origin_city_name,
+      a2.city_name AS dest_city_name,
+      a2.state_name AS dest_state_name,
+      cl.chain_name AS popular_chain,
+      cl.location_count AS count_in_city
+    FROM flights f
+    JOIN airports a1 ON f.origin_airport_id = a1.airport_id
+    JOIN airports a2 ON f.dest_airport_id = a2.airport_id
+    JOIN chain_locations cl ON cl.city = a2.city_name AND cl.state = a2.state_name
+    LIMIT $2;
+  `;
+
+  const values = [parseInt(min_chain_count, 10), parseInt(limit, 10)];
+
+  try {
+    console.log("Executing query for /flights-to-cities-with-popular-chains...");
+    const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
     console.error("Database query failed:", err);
@@ -431,6 +517,90 @@ async function getMultiLegFlightsWithDiverseDining(req, res) {
   }
 }
 
+async function getDestinationScores(req, res) {
+  const {
+    min_total_restaurants = 10,
+    min_avg_rating = 3.5,
+    limit = 20
+  } = req.query;
+
+  const query = `
+  WITH restaurant_stats AS (
+    SELECT 
+      city AS dest_city_name,
+      state AS dest_state_name,
+      COUNT(*) AS total_restaurants,
+      AVG(stars) AS avg_rating,
+      COUNT(*) FILTER (WHERE stars >= $2) AS good_restaurants
+    FROM restaurants
+    WHERE is_open = TRUE
+    GROUP BY city, state
+    HAVING COUNT(*) >= $1
+  ),
+  flight_stats AS (
+    SELECT 
+      a2.city_name AS dest_city_name,
+      a2.state_name AS dest_state_name,
+      COALESCE(COUNT(DISTINCT f.flight_date), 0) AS total_busy_days,
+      COALESCE(
+        CASE 
+          WHEN COUNT(DISTINCT f.flight_date) > 0 
+          THEN COUNT(*)::float / COUNT(DISTINCT f.flight_date)
+          ELSE 0 
+        END, 0) AS avg_daily_arrivals,
+      COALESCE(COUNT(*) / 7.0, 0) AS avg_weekly_arrivals,
+      COALESCE(
+        CASE 
+          WHEN COUNT(*) > 0 
+          THEN COUNT(DISTINCT f.flight_date)::float / NULLIF(COUNT(*) / 7.0, 0)
+          ELSE 0 
+        END, 0) AS avg_busy_days_per_week
+    FROM airports a2
+    LEFT JOIN flights f ON f.dest_airport_id = a2.airport_id
+    GROUP BY a2.city_name, a2.state_name
+  ),
+  destination_scores AS (
+    SELECT 
+      rs.dest_city_name,
+      rs.dest_state_name,
+      rs.total_restaurants,
+      rs.avg_rating,
+      rs.good_restaurants,
+      COALESCE(fs.total_busy_days, 0) AS total_busy_days,
+      COALESCE(fs.avg_daily_arrivals, 0) AS avg_daily_arrivals,
+      COALESCE(fs.avg_weekly_arrivals, 0) AS avg_weekly_arrivals,
+      COALESCE(fs.avg_busy_days_per_week, 0) AS avg_busy_days_per_week,
+      (rs.avg_rating * rs.good_restaurants + COALESCE(fs.avg_daily_arrivals, 0)) AS destination_score,
+      CASE WHEN COALESCE(fs.avg_weekly_arrivals, 0) >= 100 THEN TRUE ELSE FALSE END AS is_well_connected
+    FROM restaurant_stats rs
+    LEFT JOIN flight_stats fs 
+      ON rs.dest_city_name = fs.dest_city_name AND rs.dest_state_name = fs.dest_state_name
+  )
+  SELECT *
+  FROM destination_scores
+  ORDER BY destination_score DESC
+  LIMIT $3;
+  `;
+
+  const values = [
+    parseInt(min_total_restaurants, 10),
+    parseFloat(min_avg_rating),
+    parseInt(limit, 10)
+  ];
+
+  try {
+    console.log("Executing query for /destination-scores...");
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
 
 module.exports = {
   getTenRestaurants,
@@ -441,5 +611,7 @@ module.exports = {
   getTopThreeCityPaths,
   getTopRestaurantCities,
   getFlightsToCitiesWithOpenRestaurants,
-  getMultiLegFlightsWithDiverseDining
+  getMultiLegFlightsWithDiverseDining,
+  getPopularChainDestinations,
+  getDestinationScores
 };

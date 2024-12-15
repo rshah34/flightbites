@@ -22,6 +22,18 @@ export default function HomePage() {
           path: "/top-3-city-flight-paths",
           description: "Find the best three-city routes with high-rated restaurants",
           implemented: true
+        },
+        {
+          name: "Popular Chain Destination",
+          path: "/flights-to-cities-with-popular-chains",
+          description: "Find flights to cities with popular restaurant chains",
+          implemented: true
+        },
+        {
+          name: "Destination Scores",
+          path: "/destination-scores",
+          description: "Ranked cities based on a score combining flights and restaurants",
+          implemented: true
         }
       ]
     },
@@ -30,7 +42,7 @@ export default function HomePage() {
       description: "Plan multi-city trips based on restaurant quality",
       routes: [
         {
-          name: "Three-City Food Tours",
+          name: "Three-City Food Routes",
           path: "/three-city-flight-routes",
           description: "Find optimal three-city routes with great restaurants",
           implemented: true
