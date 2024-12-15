@@ -14,7 +14,8 @@ import {
   TableRow, 
   Typography,
   Alert,
-  CircularProgress 
+  CircularProgress,
+  Box, 
 } from '@mui/material';
 const config = require('../config.json');
 
@@ -57,55 +58,56 @@ export default function LayoverRestaurantsPage() {
   return (
     <div>
       <PageNavbar active="layover-restaurants" />
-      <Container>
-        <Typography variant="h4" gutterBottom>Find Restaurants During Layovers</Typography>
-        
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              label="Origin City"
-              value={originCity}
-              onChange={(e) => setOriginCity(e.target.value)}
-            />
+      <Container sx={{ display: 'flex', flexDirection: 'column', height: '90vh' }}>
+        <Box sx={{ width: '100%', p: 3, bgcolor: 'white', borderRadius: 2, boxShadow: 2, mb: 4 }}>
+          <Typography variant="h4" gutterBottom>Find Restaurants During Layovers</Typography>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Origin City"
+                value={originCity}
+                onChange={(e) => setOriginCity(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Destination City"
+                value={destinationCity}
+                onChange={(e) => setDestinationCity(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Flight Date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Minimum Layover (minutes)"
+                value={minLayover}
+                onChange={(e) => setMinLayover(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button 
+                variant="contained" 
+                onClick={searchLayovers}
+                disabled={loading}
+              >
+                {loading ? 'Searching...' : 'Search'}
+              </Button>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              label="Destination City"
-              value={destinationCity}
-              onChange={(e) => setDestinationCity(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              type="date"
-              label="Flight Date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              type="number"
-              label="Minimum Layover (minutes)"
-              value={minLayover}
-              onChange={(e) => setMinLayover(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Button 
-              variant="contained" 
-              onClick={searchLayovers}
-              disabled={loading}
-            >
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
-          </Grid>
-        </Grid>
+        </Box>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -116,8 +118,8 @@ export default function LayoverRestaurantsPage() {
         {loading ? (
           <CircularProgress />
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
+          <TableContainer component={Paper} sx={{ maxHeight: 500 }}>
+            <Table stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell>Layover City</TableCell>

@@ -46,25 +46,72 @@ async function getTenRestaurants(req, res) {
 
 async function getLayoverRestaurants(req, res) {
   try {
-    const { limit = 5 } = req.query;
+    const {
+      origin_city,
+      destination_city,
+      date,
+      min_layover_duration = 120,
+      limit = 10,
+    } = req.query;
+
     const query = `
-      SELECT DISTINCT 
-        f.origin_city_name as origin_city,
-        f.dest_city_name as destination_city,
-        COUNT(r.restaurant_id) as restaurant_count
-      FROM flights f
-      JOIN restaurants r ON f.dest_city_name = r.city
-      GROUP BY f.origin_city_name, f.dest_city_name
-      LIMIT $1
+      WITH first_legs AS (
+        SELECT
+          f1.flight_id AS first_leg,
+          f1.flight_date,
+          f1.crs_arr_time AS arrival_time,
+          oa.city_name AS origin_city,
+          da.city_name AS layover_city,
+          f1.dest_airport_id
+        FROM flights f1
+        JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+        JOIN airports da ON f1.dest_airport_id = da.airport_id
+        WHERE ($1::VARCHAR IS NULL OR oa.city_name = $1)
+          AND ($2::DATE IS NULL OR f1.flight_date = $2)
+      ),
+      second_legs AS (
+        SELECT
+          f2.flight_id AS second_leg,
+          f2.flight_date,
+          f2.crs_dep_time AS next_dep_time,
+          f2.origin_airport_id,
+          da.city_name AS destination_city
+        FROM flights f2
+        JOIN airports da ON f2.dest_airport_id = da.airport_id
+        WHERE ($3::VARCHAR IS NULL OR da.city_name = $3)
+      )
+      SELECT
+        fl.first_leg,
+        sl.second_leg,
+        fl.layover_city,
+        fl.arrival_time,
+        sl.next_dep_time,
+        r.name AS restaurant_name,
+        r.stars,
+        r.review_count
+      FROM first_legs fl
+      JOIN second_legs sl ON fl.dest_airport_id = sl.origin_airport_id
+        AND sl.flight_date = fl.flight_date
+        AND (sl.next_dep_time - fl.arrival_time) >= $4
+      JOIN restaurants r ON fl.layover_city = r.city
+      LIMIT $5;
     `;
-    
-    const result = await pool.query(query, [limit]);
+
+    const result = await pool.query(query, [
+      origin_city || null,
+      date || null,
+      destination_city || null,
+      min_layover_duration,
+      limit,
+    ]);
+
     res.json(result.rows);
   } catch (err) {
     console.error('Database query error:', err);
     res.status(500).json({ error: 'Database query failed' });
   }
-};
+}
+
 
 /* ---- Food Tour Flights ---- */
 async function getFoodTourFlights(req, res) {
