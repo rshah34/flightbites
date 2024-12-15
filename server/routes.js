@@ -1,7 +1,26 @@
+const config = require('./config.json');
 const { Pool } = require('pg');
-const config = require('./db-config.js');
 
-const pool = new Pool(config);
+const pool = new Pool({
+  host: config.rds_host,
+  port: config.rds_port,
+  user: config.rds_user,
+  password: config.rds_password,
+  database: config.rds_db,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+// Test database connection
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Error connecting to the database:', err);
+  } else {
+    console.log('Successfully connected to database');
+    release();
+  }
+});
 
 /* -------------------------------------------------- */
 /* ------------------- Route Handlers --------------- */

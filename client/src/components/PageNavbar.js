@@ -1,32 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function PageNavbar(props) {
-	const [navDivs, setNavDivs] = useState([]);
-
-	useEffect(() => {
-		const pageList = ['Dashboard', 'FindFriends'];
-
-		let navbarDivs = pageList.map((page, i) => {
-			if (props.active === page) {
-				return (
-					<a className="nav-item nav-link active" key={i} href={"/" + page}>
-						{page.charAt(0).toUpperCase() + page.substring(1, page.length)}
-					</a>
-				)
-			} else {
-				return (
-					<a className="nav-item nav-link" key={i} href={"/" + page}>
-						{page.charAt(0).toUpperCase() + page.substring(1, page.length)}
-					</a>
-				)
-			}
-		})
-
-		setNavDivs(navbarDivs);
-
-	}, [])
-
+export default function PageNavbar({ active }) {
+  const pages = [
+    { name: 'Home', path: '/' },
+    { name: 'Layover Restaurants', path: '/layover-restaurants' },
+    { name: 'Food Tours', path: '/food-tour-flights' },
+    { name: 'Three-City Routes', path: '/three-city-routes' },
+    { name: 'Top Cities', path: '/top-restaurant-cities' },
+    { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' }
+  ];
 
 	return (
 		<div className="PageNavbar">

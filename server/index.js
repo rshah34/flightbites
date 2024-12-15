@@ -1,11 +1,12 @@
 const bodyParser = require('body-parser');
 const express = require('express');
-var routes = require("./routes.js");
+const routes = require("./routes.js");
 const cors = require('cors');
+const config = require('./config.json');
 
 const app = express();
 
-app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -16,16 +17,30 @@ app.use(bodyParser.urlencoded({ extended: false }));
 /* ---- (Dashboard) ---- */
 // The route localhost:8081/restaurants is registered to the function
 // routes.restaurants, specified in routes.js.
+
 app.get('/restaurants', routes.getTenRestaurants);
 
-/* ---- (Complex Routes) ---- */
+// Complex Routes
 app.get('/layover-restaurants', routes.getLayoverRestaurants);
 app.get('/food-tour-flights', routes.getFoodTourFlights);
-app.get('/good-restaurants-destinations', routes.getGoodRestaurantDestinations);
+app.get('/good-restaurant-destinations', routes.getGoodRestaurantDestinations); // Fixed route name
 app.get('/three-city-flight-routes', routes.getThreeCityFlightRoutes);
 app.get('/top-3-city-flight-paths', routes.getTopThreeCityPaths);
 app.get('/top-cities-with-high-rated-restaurants', routes.getTopRestaurantCities);
 
-app.listen(8081, () => {
-	console.log(`Server listening on PORT 8081`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
+});
+
+// Start server
+const PORT = process.env.PORT || 8081;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
+
+// Handle uncaught errors
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
 });

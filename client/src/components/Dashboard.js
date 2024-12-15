@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import '../style/Dashboard.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Container, Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
 import PageNavbar from './PageNavbar';
+const config = require('../config.json');
 
-export default function Dashboard(props) {
-  const [restaurants, setRestaurants] = useState([]); // State for restaurant data
+export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    topCities: [],
+    recentRoutes: [],
+    popularLayovers: []
+  });
 
   useEffect(() => {
     fetch('http://localhost:8081/restaurants', {
@@ -20,9 +25,19 @@ export default function Dashboard(props) {
 
         setRestaurants(restaurantDivs);
       })
-      .catch(err => console.error(err));
-      console.log('error!!!!')
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
   return (
     <div className='Dashboard'>
