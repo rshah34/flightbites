@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import PageNavbar from '../components/PageNavbar';
 import { 
   Container, 
   Typography, 
@@ -11,8 +10,11 @@ import {
   TableHead, 
   TableRow,
   CircularProgress,
-  Alert 
+  Alert,
+  Box,
+  Divider
 } from '@mui/material';
+import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
 
 export default function TopThreeCityPathsPage() {
@@ -42,79 +44,92 @@ export default function TopThreeCityPathsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div>
-        <PageNavbar active="top-three-city-paths" />
-        <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Container>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div>
-        <PageNavbar active="top-3-city-flight-paths" />
-        <Container>
-          <Alert severity="error" sx={{ mt: 2 }}>
-            Error: {error}
-          </Alert>
-        </Container>
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageNavbar active="top-3-city-flight-paths" />
-      <Container>
-        <Typography variant="h4" gutterBottom>
-          Top Three-City Flight Paths for Food Tourism
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
-          Routes with the highest number of highly-rated restaurants
-        </Typography>
+      <Container sx={{ padding: '2rem' }}>
+        {/* Title Box */}
+        <Box 
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            padding: '1rem 2rem', 
+            borderRadius: '8px', 
+            maxWidth: '600px', 
+            margin: '0 auto', 
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', 
+            textAlign: 'center', 
+            mb: 4 
+          }}
+        >
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            sx={{ fontWeight: 'bold', color: '#2c3e50', letterSpacing: '0.1rem' }}
+          >
+            Top Three-City Flight Paths
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ fontSize: '1.1rem', color: '#34495e' }}
+          >
+            Routes with the highest number of highly-rated restaurants
+          </Typography>
+        </Box>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Start City</TableCell>
-                <TableCell>Start State</TableCell>
-                <TableCell>Connection City</TableCell>
-                <TableCell>Connection State</TableCell>
-                <TableCell>Final City</TableCell>
-                <TableCell>Final State</TableCell>
-                <TableCell align="right">Total High-Rated Restaurants</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.length > 0 ? (
-                results.map((row, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell>{row.start_city || 'N/A'}</TableCell>
-                    <TableCell>{row.start_state || 'N/A'}</TableCell>
-                    <TableCell>{row.connection_city || 'N/A'}</TableCell>
-                    <TableCell>{row.connection_state || 'N/A'}</TableCell>
-                    <TableCell>{row.final_city || 'N/A'}</TableCell>
-                    <TableCell>{row.final_state || 'N/A'}</TableCell>
-                    <TableCell align="right">
-                      {Number(row.total_high_rated_restaurants || 0).toLocaleString()}
+        <Divider sx={{ my: 4, borderColor: 'transparent' }} />
+
+        {/* Error Message */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, backgroundColor: '#f8d7da', color: '#721c24' }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <Box sx={{ textAlign: 'center', mt: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '8px' }}>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#34495e' }}>
+                <TableRow>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Start City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Start State</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Connection City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Connection State</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Final City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Final State</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }} align="right">Total High-Rated Restaurants</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {results.length > 0 ? (
+                  results.map((row, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{row.start_city || 'N/A'}</TableCell>
+                      <TableCell>{row.start_state || 'N/A'}</TableCell>
+                      <TableCell>{row.connection_city || 'N/A'}</TableCell>
+                      <TableCell>{row.connection_state || 'N/A'}</TableCell>
+                      <TableCell>{row.final_city || 'N/A'}</TableCell>
+                      <TableCell>{row.final_state || 'N/A'}</TableCell>
+                      <TableCell align="right">
+                        {Number(row.total_high_rated_restaurants || 0).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No routes found
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No routes found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Container>
     </div>
   );

@@ -8,10 +8,12 @@ export default function PageNavbar({ active }) {
     { name: 'Home', path: '/' },
     { name: 'Layover Restaurants', path: '/layover-restaurants' },
     { name: 'Food Tours', path: '/food-tour-flights' },
-    { name: 'Three-City Routes', path: '/three-city-routes' },
+    { name: 'Three-City Routes', path: '/three-city-flight-routes' },
     { name: 'Top Cities', path: '/top-restaurant-cities' },
     { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' },
-	{ name: 'Top 3 City Flight Paths', path: '/top-3-city-flight-paths' }
+	{ name: 'Top 3 City Flight Paths', path: '/top-3-city-flight-paths' },
+	{ name: 'Open Restaurants', path: '/top-cities-with-open-restaurants' },
+	{ name: 'Diverse Layovers', path: '/diverse-dining-layovers' },
   ];
 
   return (

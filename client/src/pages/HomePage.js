@@ -31,7 +31,7 @@ export default function HomePage() {
       routes: [
         {
           name: "Three-City Food Tours",
-          path: "/three-city-routes",
+          path: "/three-city-flight-routes",
           description: "Find optimal three-city routes with great restaurants",
           implemented: true
         },

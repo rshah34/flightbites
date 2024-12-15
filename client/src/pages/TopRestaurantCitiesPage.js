@@ -1,16 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-  Container, 
-  Typography, 
-  Paper, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow,
-  CircularProgress,
-  Alert 
+  Container, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
+  TableHead, TableRow, CircularProgress, Alert, Box, Divider 
 } from '@mui/material';
 const config = require('../config.json');
 import PageNavbar from '../components/PageNavbar';
@@ -42,82 +33,97 @@ export default function TopRestaurantCitiesPage() {
     }
   };
 
-  // Helper function to safely format numbers
-  const formatNumber = (value, decimals = 2) => {
-    if (typeof value === 'number') {
-      return value.toFixed(decimals);
-    }
-    const num = Number(value);
-    return isNaN(num) ? '0' : num.toFixed(decimals);
-  };
-
-  if (loading) {
-    return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <Alert severity="error" sx={{ mt: 2 }}>
-          Error: {error}
-        </Alert>
-      </Container>
-    );
-  }
-
   return (
     <div>
-        <PageNavbar active="[PageName]" />
-        <Container>
-        <Typography variant="h4" gutterBottom>Top Cities for Food Tourism</Typography>
-        
-        <TableContainer component={Paper}>
+      <PageNavbar active="top-restaurant-cities" />
+      <Container sx={{ padding: '2rem' }}>
+        {/* Title Box */}
+        <Box 
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            padding: '1rem 2rem', 
+            borderRadius: '8px', 
+            maxWidth: '600px', 
+            margin: '0 auto', 
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', 
+            textAlign: 'center', 
+            mb: 4 
+          }}
+        >
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            sx={{ fontWeight: 'bold', color: '#2c3e50', letterSpacing: '0.1rem' }}
+          >
+            Top Cities for Food Tourism
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ fontSize: '1.1rem', color: '#34495e' }}
+          >
+            Discover cities with the highest concentration of excellent restaurants
+          </Typography>
+        </Box>
+
+        <Divider sx={{ my: 4, borderColor: 'transparent' }} />
+
+        {/* Error Message */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, backgroundColor: '#f8d7da', color: '#721c24' }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <Box sx={{ textAlign: 'center', mt: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '8px' }}>
             <Table>
-            <TableHead>
+              <TableHead sx={{ backgroundColor: '#34495e' }}>
                 <TableRow>
-                <TableCell>City</TableCell>
-                <TableCell>State</TableCell>
-                <TableCell align="right">High-Rated Restaurants</TableCell>
-                <TableCell align="right">Average Rating</TableCell>
-                <TableCell align="right">Average Reviews</TableCell>
-                <TableCell align="right">Score</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>State</TableCell>
+                  <TableCell align="right" sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>High-Rated Restaurants</TableCell>
+                  <TableCell align="right" sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Average Rating</TableCell>
+                  <TableCell align="right" sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Average Reviews</TableCell>
+                  <TableCell align="right" sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Score</TableCell>
                 </TableRow>
-            </TableHead>
-            <TableBody>
+              </TableHead>
+              <TableBody>
                 {results.length > 0 ? (
-                results.map((row, idx) => (
+                  results.map((row, idx) => (
                     <TableRow key={idx}>
-                    <TableCell>{row.city || 'N/A'}</TableCell>
-                    <TableCell>{row.state || 'N/A'}</TableCell>
-                    <TableCell align="right">
+                      <TableCell>{row.city || 'N/A'}</TableCell>
+                      <TableCell>{row.state || 'N/A'}</TableCell>
+                      <TableCell align="right">
                         {Number(row.high_rating_restaurant_count || 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell align="right">
-                        {formatNumber(row.avg_rating)}
-                    </TableCell>
-                    <TableCell align="right">
-                        {formatNumber(row.avg_reviews, 0)}
-                    </TableCell>
-                    <TableCell align="right">
-                        {formatNumber(row.weighted_score)}
-                    </TableCell>
+                      </TableCell>
+                      <TableCell align="right">
+                        {Number(row.avg_rating || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {Number(row.avg_reviews || 0).toFixed(0)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {Number(row.weighted_score || 0).toFixed(2)}
+                      </TableCell>
                     </TableRow>
-                ))
+                  ))
                 ) : (
-                <TableRow>
+                  <TableRow>
                     <TableCell colSpan={6} align="center">
-                    No results found
+                      No results found
                     </TableCell>
-                </TableRow>
+                  </TableRow>
                 )}
-            </TableBody>
+              </TableBody>
             </Table>
-        </TableContainer>
-        </Container>
+          </TableContainer>
+        )}
+      </Container>
     </div>
   );
 }
