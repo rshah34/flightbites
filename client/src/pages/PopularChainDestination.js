@@ -38,42 +38,82 @@ export default function PopularChainDestination() {
     <div>
       <PageNavbar active="flights-to-cities-with-popular-chains" />
       <Container sx={{ padding: '2rem' }}>
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h4" gutterBottom>Flights to Cities with Popular Chains</Typography>
-          <Typography variant="body1">Find flights to cities with the most popular restaurant chains.</Typography>
+        <Box 
+          sx={{ 
+            textAlign: 'center', 
+            mb: 4, 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            padding: '1rem 2rem', 
+            borderRadius: '8px', 
+            maxWidth: '600px', 
+            margin: '0 auto', 
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)' 
+          }}
+        >
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            sx={{ fontWeight: 'bold', color: '#2c3e50', letterSpacing: '0.1rem' }}
+          >
+            Flights to Cities with Popular Chains
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ fontSize: '1.1rem', color: '#34495e' }}
+          >
+            Find flights to cities with the most popular restaurant chains.
+          </Typography>
         </Box>
 
-        <Divider sx={{ my: 4 }} />
+        <Divider sx={{ my: 4, borderColor: 'transparent' }} />
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <Typography>Minimum Chain Count</Typography>
-            <Slider
-              value={minChainCount}
-              min={1}
-              max={50}
-              step={1}
-              onChange={(e, val) => setMinChainCount(val)}
-              valueLabelDisplay="auto"
-            />
+            <Box 
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              <Typography gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
+                Minimum Chain Count
+              </Typography>
+              <Slider
+                value={minChainCount}
+                min={1}
+                max={50}
+                step={1}
+                onChange={(e, val) => setMinChainCount(val)}
+                valueLabelDisplay="auto"
+              />
+            </Box>
           </Grid>
         </Grid>
 
-        <Button variant="contained" color="primary" onClick={searchDestinations} sx={{ mt: 3 }}>Submit</Button>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={searchDestinations} 
+          sx={{ mt: 3, backgroundColor: '#1abc9c', '&:hover': { backgroundColor: '#16a085' } }}
+        >
+          Submit
+        </Button>
 
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mt: 2, backgroundColor: '#f8d7da', color: '#721c24' }}>{error}</Alert>}
         {loading ? (
           <CircularProgress sx={{ mt: 3 }} />
         ) : (
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
+          <TableContainer component={Paper} sx={{ mt: 3, boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '8px' }}>
             <Table>
-              <TableHead>
+              <TableHead sx={{ backgroundColor: '#34495e' }}>
                 <TableRow>
-                  <TableCell>Flight ID</TableCell>
-                  <TableCell>Origin City</TableCell>
-                  <TableCell>Destination City</TableCell>
-                  <TableCell>Destination State</TableCell>
-                  <TableCell>Popular Chain</TableCell>
-                  <TableCell>Location Count</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Flight ID</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Origin City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Destination City</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Destination State</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Popular Chain</TableCell>
+                  <TableCell sx={{ color: '#ecf0f1', fontWeight: 'bold' }}>Location Count</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

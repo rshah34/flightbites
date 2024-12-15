@@ -350,30 +350,31 @@ async function getPopularChainDestinations(req, res) {
   const { min_chain_count = 3, limit = 15 } = req.query;
 
   const query = `
-    WITH chain_locations AS (
-      SELECT
-        rc.category AS chain_name,
-        r.city,
-        r.state,
-        COUNT(*) AS location_count
-      FROM restaurant_categories rc
-      JOIN restaurants r ON rc.restaurant_id = r.restaurant_id
-      WHERE rc.category IS NOT NULL
-      GROUP BY rc.category, r.city, r.state
-      HAVING COUNT(*) >= $1
-    )
+  WITH chain_locations AS (
     SELECT
-      f.flight_id,
-      a1.city_name AS origin_city_name,
-      a2.city_name AS dest_city_name,
-      a2.state_name AS dest_state_name,
-      cl.chain_name AS popular_chain,
-      cl.location_count AS count_in_city
-    FROM flights f
-    JOIN airports a1 ON f.origin_airport_id = a1.airport_id
-    JOIN airports a2 ON f.dest_airport_id = a2.airport_id
-    JOIN chain_locations cl ON cl.city = a2.city_name AND cl.state = a2.state_name
-    LIMIT $2;
+      rc.category AS chain_name,
+      r.city,
+      r.state,
+      COUNT(*) AS location_count
+    FROM restaurant_categories rc
+    JOIN restaurants r ON rc.restaurant_id = r.restaurant_id
+    WHERE rc.category IS NOT NULL
+    GROUP BY rc.category, r.city, r.state
+    HAVING COUNT(*) >= $1
+  )
+  SELECT DISTINCT ON (a2.city_name, a2.state_name)
+    f.flight_id,
+    a1.city_name AS origin_city_name,
+    a2.city_name AS dest_city_name,
+    a2.state_name AS dest_state_name,
+    cl.chain_name AS popular_chain,
+    cl.location_count AS count_in_city
+  FROM flights f
+  JOIN airports a1 ON f.origin_airport_id = a1.airport_id
+  JOIN airports a2 ON f.dest_airport_id = a2.airport_id
+  JOIN chain_locations cl ON cl.city = a2.city_name AND cl.state = a2.state_name
+  ORDER BY a2.city_name, a2.state_name, cl.location_count DESC
+  LIMIT $2;
   `;
 
   const values = [parseInt(min_chain_count, 10), parseInt(limit, 10)];
