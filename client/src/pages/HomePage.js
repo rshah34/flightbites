@@ -1,8 +1,10 @@
-import { Container, Grid, Card, CardContent, Typography, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom'; 
+import { Container, Grid, Card, CardContent, Typography, Box, Chip } from '@mui/material';
+import PageNavbar from '../components/PageNavbar';
+import Dashboard from '../components/Dashboard';
 
 export default function HomePage() {
-  const navigate = useNavigate();
+  const history = useHistory();
 
   const queryGroups = [
     {
@@ -11,15 +13,15 @@ export default function HomePage() {
       routes: [
         {
           name: "Top Restaurant Cities",
-          path: "/top-restaurant-cities",
+          path: "/top-cities-with-high-rated-restaurants",
           description: "Discover cities with the highest concentration of good restaurants",
           implemented: true
         },
         {
-          name: "Restaurant Rankings",
-          path: "/restaurant-rankings",
-          description: "View rankings of individual restaurants",
-          implemented: false
+          name: "Top Three-City Paths",
+          path: "/top-3-city-flight-paths",
+          description: "Find the best three-city routes with high-rated restaurants",
+          implemented: true
         }
       ]
     },
@@ -29,8 +31,8 @@ export default function HomePage() {
       routes: [
         {
           name: "Three-City Food Tours",
-          path: "/three-city-flight-routes",
-          description: "Find optimal three-city flight routes with great restaurants",
+          path: "/three-city-routes",
+          description: "Find optimal three-city routes with great restaurants",
           implemented: true
         },
         {
@@ -42,95 +44,92 @@ export default function HomePage() {
       ]
     },
     {
-      title: "Layover Planning",
-      description: "Make the most of your layovers with good food",
+      title: "Restaurant-Based Travel Planning",
+      description: "Plan your travel around great food experiences",
       routes: [
         {
           name: "Layover Restaurants",
           path: "/layover-restaurants",
-          description: "Find restaurants during layovers",
+          description: "Find good restaurants during layovers",
           implemented: true
         },
-        {
-          name: "Extended Layover Planning",
-          path: "/extended-layovers",
-          description: "Plan longer layovers around meal times",
-          implemented: false
-        }
-      ]
-    },
-    {
-      title: "Destination Planning",
-      description: "Find destinations based on restaurant quality",
-      routes: [
         {
           name: "Good Restaurant Destinations",
           path: "/good-restaurant-destinations",
-          description: "Find cities with high concentrations of good restaurants",
+          description: "Find destinations with high concentrations of good restaurants",
           implemented: true
-        },
-        {
-          name: "Cuisine-Specific Destinations",
-          path: "/cuisine-destinations",
-          description: "Find destinations based on specific cuisine types",
-          implemented: false
         }
       ]
     }
   ];
 
   return (
-    <div>
-        <PageNavbar active="[PageName]" />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h3" gutterBottom align="center">
-            Food Tourism Flight Planner
-        </Typography>
-        <Typography variant="h6" gutterBottom align="center" color="textSecondary">
-            Plan your travels around great food experiences
-        </Typography>
-        
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-            {queryGroups.map((group) => (
-            <Grid item xs={12} md={6} key={group.title}>
-                <Card>
-                <CardContent>
-                    <Typography variant="h5" gutterBottom>
-                    {group.title}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" paragraph>
-                    {group.description}
-                    </Typography>
-                    <Grid container spacing={2}>
-                    {group.routes.map((route) => (
-                        <Grid item xs={12} key={route.path}>
-                        <Button
-                            variant="contained"
-                            fullWidth
-                            onClick={() => navigate(route.path)}
-                            disabled={!route.implemented}
-                            sx={{
-                            backgroundColor: route.implemented ? 'primary.main' : 'grey.300',
-                            '&:hover': {
-                                backgroundColor: route.implemented ? 'primary.dark' : 'grey.400'
-                            }
-                            }}
-                        >
-                            {route.name}
-                            {!route.implemented && " (Coming Soon)"}
-                        </Button>
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                            {route.description}
+    <>
+      <PageNavbar active="Home" />
+      <Container>
+        {/* Dashboard Section */}
+        <Box sx={{ mt: 4, mb: 6 }}>
+          <Dashboard />
+        </Box>
+
+        {/* Main Content Section */}
+        <Box sx={{ backgroundColor: '#f5f5f5', padding: 3, borderRadius: 2, mb: 4 }}>
+          <Typography variant="h3" gutterBottom>
+            Airport Cuisine Explorer
+          </Typography>
+          <Typography variant="h6" gutterBottom color="textSecondary">
+            Discover the best food destinations and plan your culinary adventures
+          </Typography>
+        </Box>
+
+        {/* Query Groups Section */}
+        <Box sx={{ mb: 6 }}>
+          {queryGroups.map((group, idx) => (
+            <Box key={idx} sx={{ mb: 6 }}>
+              <Typography variant="h4" gutterBottom>
+                {group.title}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom color="textSecondary">
+                {group.description}
+              </Typography>
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {group.routes.map((route, routeIdx) => (
+                  <Grid item xs={12} md={6} key={routeIdx}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        cursor: route.implemented ? 'pointer' : 'default',
+                        opacity: route.implemented ? 1 : 0.7,
+                        '&:hover': {
+                          boxShadow: route.implemented ? 6 : 1
+                        }
+                      }}
+                      onClick={() => route.implemented && history.push(route.path)}  // Change this line
+                    >
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {route.name}
+                          {!route.implemented && (
+                            <Chip 
+                              label="Coming Soon" 
+                              size="small" 
+                              color="primary" 
+                              sx={{ ml: 1 }}
+                            />
+                          )}
                         </Typography>
-                        </Grid>
-                    ))}
-                    </Grid>
-                </CardContent>
-                </Card>
-            </Grid>
-            ))}
-        </Grid>
-        </Container>
-    </div>
+                        <Typography variant="body2" color="textSecondary">
+                          {route.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          ))}
+        </Box>
+      </Container>
+    </>
   );
 }

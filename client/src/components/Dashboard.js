@@ -1,7 +1,5 @@
-// src/components/Dashboard.js
 import React, { useState, useEffect } from 'react';
 import { Container, Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
-import PageNavbar from './PageNavbar';
 const config = require('../config.json');
 
 export default function Dashboard() {
@@ -9,7 +7,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     topCities: [],
     recentRoutes: [],
-    popularLayovers: []
+    popularLayovers: [],
+    topThreeCityPaths: [] 
   });
   const [error, setError] = useState(null);
 
@@ -18,29 +17,33 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const [topCities, routes, layovers] = await Promise.all([
+        const [topCities, routes, layovers, threeCityPaths] = await Promise.all([
           fetch(`http://${config.server_host}:${config.server_port}/top-cities-with-high-rated-restaurants?limit=5`),
           fetch(`http://${config.server_host}:${config.server_port}/three-city-flight-routes?limit=5`),
-          fetch(`http://${config.server_host}:${config.server_port}/layover-restaurants?limit=5`)
+          fetch(`http://${config.server_host}:${config.server_port}/layover-restaurants?limit=5`),
+          fetch(`http://${config.server_host}:${config.server_port}/top-3-city-flight-paths?limit=5`) 
         ]);
 
-        const [topCitiesData, routesData, layoversData] = await Promise.all([
+        const [topCitiesData, routesData, layoversData, threeCityPathsData] = await Promise.all([
           topCities.json(),
           routes.json(),
-          layovers.json()
+          layovers.json(),
+          threeCityPaths.json() 
         ]);
 
         if (mounted) {
           setStats({
             topCities: Array.isArray(topCitiesData) ? topCitiesData : [],
             recentRoutes: Array.isArray(routesData) ? routesData : [],
-            popularLayovers: Array.isArray(layoversData) ? layoversData : []
+            popularLayovers: Array.isArray(layoversData) ? layoversData : [],
+            topThreeCityPaths: Array.isArray(threeCityPathsData) ? threeCityPathsData : [] 
           });
           setLoading(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Detailed error:', err);
         if (mounted) {
+          console.log('Setting error state to:', err.message);
           setError(err.message);
           setLoading(false);
         }
@@ -65,9 +68,11 @@ export default function Dashboard() {
   if (error) {
     return (
       <Container>
-        <PageNavbar />
         <Typography color="error" sx={{ mt: 4 }}>
-          Error: {error}
+          Error loading dashboard data: {error}
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 2 }}>
+          Please check the server connection and try again.
         </Typography>
       </Container>
     );
@@ -75,16 +80,15 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageNavbar />
       <Container sx={{ mt: 4 }}>
         <Grid container spacing={4}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Top Food Cities
                 </Typography>
-                {stats.topCities && stats.topCities.map((city, idx) => (
+                {stats.topCities.map((city, idx) => (
                   <Typography key={idx} variant="body2">
                     {city.city}, {city.state} - {city.high_rating_restaurant_count} top restaurants
                   </Typography>
@@ -93,13 +97,28 @@ export default function Dashboard() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Top Three-City Paths
+                </Typography>
+                {stats.topThreeCityPaths.map((path, idx) => (
+                  <Typography key={idx} variant="body2">
+                    {path.start_city}, {path.start_state} → {path.connection_city}, {path.connection_state} → {path.final_city}, {path.final_state} ({path.total_high_rated_restaurants} restaurants)
+                  </Typography>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Popular Routes
                 </Typography>
-                {stats.recentRoutes && stats.recentRoutes.map((route, idx) => (
+                {stats.recentRoutes.map((route, idx) => (
                   <Typography key={idx} variant="body2">
                     {route.city1} → {route.city2} → {route.city3}
                   </Typography>
@@ -108,13 +127,13 @@ export default function Dashboard() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Best Layover Cities
                 </Typography>
-                {stats.popularLayovers && stats.popularLayovers.map((layover, idx) => (
+                {stats.popularLayovers.map((layover, idx) => (
                   <Typography key={idx} variant="body2">
                     {layover.origin_city} → {layover.destination_city} ({layover.restaurant_count} restaurants)
                   </Typography>

@@ -56,7 +56,7 @@ export default function TopThreeCityPathsPage() {
   if (error) {
     return (
       <div>
-        <PageNavbar active="top-three-city-paths" />
+        <PageNavbar active="top-3-city-flight-paths" />
         <Container>
           <Alert severity="error" sx={{ mt: 2 }}>
             Error: {error}
@@ -68,7 +68,7 @@ export default function TopThreeCityPathsPage() {
 
   return (
     <div>
-      <PageNavbar active="top-three-city-paths" />
+      <PageNavbar active="top-3-city-flight-paths" />
       <Container>
         <Typography variant="h4" gutterBottom>
           Top Three-City Flight Paths for Food Tourism
