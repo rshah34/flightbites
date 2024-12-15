@@ -80,54 +80,57 @@ export default function HomePage() {
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h3" gutterBottom align="center">
-        Food Tourism Flight Planner
-      </Typography>
-      <Typography variant="h6" gutterBottom align="center" color="textSecondary">
-        Plan your travels around great food experiences
-      </Typography>
-      
-      <Grid container spacing={4} sx={{ mt: 2 }}>
-        {queryGroups.map((group) => (
-          <Grid item xs={12} md={6} key={group.title}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  {group.title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" paragraph>
-                  {group.description}
-                </Typography>
-                <Grid container spacing={2}>
-                  {group.routes.map((route) => (
-                    <Grid item xs={12} key={route.path}>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={() => navigate(route.path)}
-                        disabled={!route.implemented}
-                        sx={{
-                          backgroundColor: route.implemented ? 'primary.main' : 'grey.300',
-                          '&:hover': {
-                            backgroundColor: route.implemented ? 'primary.dark' : 'grey.400'
-                          }
-                        }}
-                      >
-                        {route.name}
-                        {!route.implemented && " (Coming Soon)"}
-                      </Button>
-                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                        {route.description}
-                      </Typography>
+    <div>
+        <PageNavbar active="[PageName]" />
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h3" gutterBottom align="center">
+            Food Tourism Flight Planner
+        </Typography>
+        <Typography variant="h6" gutterBottom align="center" color="textSecondary">
+            Plan your travels around great food experiences
+        </Typography>
+        
+        <Grid container spacing={4} sx={{ mt: 2 }}>
+            {queryGroups.map((group) => (
+            <Grid item xs={12} md={6} key={group.title}>
+                <Card>
+                <CardContent>
+                    <Typography variant="h5" gutterBottom>
+                    {group.title}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" paragraph>
+                    {group.description}
+                    </Typography>
+                    <Grid container spacing={2}>
+                    {group.routes.map((route) => (
+                        <Grid item xs={12} key={route.path}>
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            onClick={() => navigate(route.path)}
+                            disabled={!route.implemented}
+                            sx={{
+                            backgroundColor: route.implemented ? 'primary.main' : 'grey.300',
+                            '&:hover': {
+                                backgroundColor: route.implemented ? 'primary.dark' : 'grey.400'
+                            }
+                            }}
+                        >
+                            {route.name}
+                            {!route.implemented && " (Coming Soon)"}
+                        </Button>
+                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                            {route.description}
+                        </Typography>
+                        </Grid>
+                    ))}
                     </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Container>
+                </CardContent>
+                </Card>
+            </Grid>
+            ))}
+        </Grid>
+        </Container>
+    </div>
   );
 }

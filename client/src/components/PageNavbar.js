@@ -13,17 +13,42 @@ export default function PageNavbar({ active }) {
     { name: 'Restaurant Destinations', path: '/good-restaurant-destinations' }
   ];
 
-	return (
-		<div className="PageNavbar">
-			<nav className="navbar navbar-expand-lg navbar-light bg-light">
-				<span className="navbar-brand center">CIS550 Exercise 3</span>
-				<div className="collapse navbar-collapse" id="navbarNavAltMarkup">
-					<div className="navbar-nav">
-						{navDivs}
-					</div>
-				</div>
-			</nav>
-		</div>
-	);
-
+  return (
+    <AppBar position="static">
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/"
+            sx={{
+              mr: 4,
+              display: 'flex',
+              fontWeight: 700,
+              color: 'inherit',
+              textDecoration: 'none',
+            }}
+          >
+            FlightBites
+          </Typography>
+          <div style={{ flexGrow: 1, display: 'flex' }}>
+            {pages.map((page) => (
+              <Button
+                key={page.path}
+                component={RouterLink}
+                to={page.path}
+                sx={{
+                  color: 'white',
+                  display: 'block',
+                  backgroundColor: active === page.name ? 'rgba(255,255,255,0.1)' : 'transparent'
+                }}
+              >
+                {page.name}
+              </Button>
+            ))}
+          </div>
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
 }
