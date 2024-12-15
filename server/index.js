@@ -27,6 +27,8 @@ app.get('/good-restaurant-destinations', routes.getGoodRestaurantDestinations); 
 app.get('/three-city-flight-routes', routes.getThreeCityFlightRoutes);
 app.get('/top-3-city-flight-paths', routes.getTopThreeCityPaths);
 app.get('/top-cities-with-high-rated-restaurants', routes.getTopRestaurantCities);
+app.get('/top-cities-with-open-restaurants', routes.getFlightsToCitiesWithOpenRestaurants);
+app.get('/multi-leg-flights-with-diverse-dining', routes.getMultiLegFlightsWithDiverseDining);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

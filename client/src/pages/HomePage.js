@@ -1,5 +1,5 @@
 import { useHistory } from 'react-router-dom'; 
-import { Container, Grid, Card, CardContent, Typography, Box, Chip } from '@mui/material';
+import { Container, Grid, Card, CardContent, Typography, Box, Chip, Divider } from '@mui/material';
 import PageNavbar from '../components/PageNavbar';
 import Dashboard from '../components/Dashboard';
 
@@ -40,6 +40,12 @@ export default function HomePage() {
           path: "/food-tour-flights",
           description: "Find flights connecting cities with good restaurants",
           implemented: true
+        },
+        {
+          name: "Diverse Dining Layovers",
+          path: "/diverse-dining-layovers",
+          description: "Find layover cities for connecting flights with diverse dining options",
+          implemented: true
         }
       ]
     },
@@ -58,6 +64,12 @@ export default function HomePage() {
           path: "/good-restaurant-destinations",
           description: "Find destinations with high concentrations of good restaurants",
           implemented: true
+        },
+        {
+          name: "Many Open Restaurants",
+          path: "/top-cities-with-open-restaurants",
+          description: "Find destinations with a high number of open restaurants",
+          implemented: true
         }
       ]
     }
@@ -66,54 +78,98 @@ export default function HomePage() {
   return (
     <>
       <PageNavbar active="Home" />
+      <Divider sx={{ my: 4, borderColor: 'transparent'}} />
+      {/* Main Content Section */}
+        <Box sx={{
+          backgroundColor: '#2c3e50', // Dark navy background
+          padding: '3rem',
+          borderRadius: 2,
+          textAlign: 'center',
+          color: 'white',
+          mb: 4,
+        }}
+        >
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+            FlightBites: The Airport Cuisine Explorer
+          </Typography>
+          <Typography variant="h6" color="#ecf0f1" sx={{ fontWeight: 'medium' }}>
+            Discover the best food destinations and plan your culinary adventures!
+          </Typography>
+        </Box>
       <Container>
         {/* Dashboard Section */}
         <Box sx={{ mt: 4, mb: 6 }}>
           <Dashboard />
         </Box>
 
-        {/* Main Content Section */}
-        <Box sx={{ backgroundColor: '#f5f5f5', padding: 3, borderRadius: 2, mb: 4 }}>
-          <Typography variant="h3" gutterBottom>
-            Airport Cuisine Explorer
-          </Typography>
-          <Typography variant="h6" gutterBottom color="textSecondary">
-            Discover the best food destinations and plan your culinary adventures
-          </Typography>
-        </Box>
-
         {/* Query Groups Section */}
         <Box sx={{ mb: 6 }}>
           {queryGroups.map((group, idx) => (
-            <Box key={idx} sx={{ mb: 6 }}>
-              <Typography variant="h4" gutterBottom>
+            // Wrapper for each section
+            <Box
+              key={idx}
+              sx={{
+                backgroundColor: idx % 2 === 0 ? '#f9f9f9' : '#ffffff', // Alternating background colors
+                borderRadius: '12px', // Rounded corners
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Subtle shadow
+                padding: '2rem', // Padding inside the section
+                mb: 4, // Margin bottom to separate sections
+              }}
+            >
+              {/* Section Title */}
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 'bold',
+                  letterSpacing: '0.05rem',
+                  textAlign: 'center', 
+                  color: '#2c3e50',
+                  mb: 2,
+                }}
+              >
                 {group.title}
               </Typography>
-              <Typography variant="subtitle1" gutterBottom color="textSecondary">
+              {/* Section Description */}
+              <Typography
+                variant="subtitle1"
+                gutterBottom
+                color="textSecondary"
+                sx={{ textAlign: 'center', mb: 4 }}
+              >
                 {group.description}
               </Typography>
-              <Grid container spacing={3} sx={{ mt: 2 }}>
+              <Box
+                sx={{
+                  backgroundColor: '#f5f5f5',
+                  padding: '2rem',
+                  borderRadius: '8px',
+                  mb: 4,
+                }}
+              >
+              {/* Cards Grid */}
+              <Grid container spacing={3}>
                 {group.routes.map((route, routeIdx) => (
                   <Grid item xs={12} md={6} key={routeIdx}>
-                    <Card 
-                      sx={{ 
-                        height: '100%',
-                        cursor: route.implemented ? 'pointer' : 'default',
-                        opacity: route.implemented ? 1 : 0.7,
+                    <Card
+                      sx={{
+                        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                        transition: 'transform 0.3s, box-shadow 0.3s',
                         '&:hover': {
-                          boxShadow: route.implemented ? 6 : 1
-                        }
+                          transform: 'translateY(-5px)',
+                          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.2)',
+                          border: '1px solid #3498db',
+                        },
                       }}
-                      onClick={() => route.implemented && history.push(route.path)}  // Change this line
+                      onClick={() => route.implemented && history.push(route.path)}
                     >
                       <CardContent>
-                        <Typography variant="h6" gutterBottom>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                           {route.name}
                           {!route.implemented && (
-                            <Chip 
-                              label="Coming Soon" 
-                              size="small" 
-                              color="primary" 
+                            <Chip
+                              label="Coming Soon"
+                              size="small"
+                              color="primary"
                               sx={{ ml: 1 }}
                             />
                           )}
@@ -126,6 +182,7 @@ export default function HomePage() {
                   </Grid>
                 ))}
               </Grid>
+              </Box>
             </Box>
           ))}
         </Box>

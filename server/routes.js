@@ -264,6 +264,98 @@ async function getTopRestaurantCities(req, res) {
   }
 }
 
+async function getFlightsToCitiesWithOpenRestaurants(req, res) {
+  const {
+    min_open_restaurants = 1, 
+    min_avg_rating = 3.0
+  } = req.query;
+
+  const query = `
+    SELECT
+      f.flight_id,
+      a1.city_name AS origin_city_name,
+      a2.city_name AS dest_city_name,
+      a2.state_name AS dest_state_name,
+      rs.restaurant_count AS open_count,
+      COALESCE(rs.avg_rating, 0) AS avg_rating
+  FROM flights f
+  JOIN airports a1 ON f.origin_airport_id = a1.airport_id
+  JOIN airports a2 ON f.dest_airport_id = a2.airport_id
+  JOIN mv_restaurant_stats rs ON a2.city_name = rs.city AND a2.state_name = rs.state
+  WHERE rs.restaurant_count >= $1 
+    AND rs.avg_rating >= $2      
+  ORDER BY rs.restaurant_count DESC
+  `;
+
+  try {
+    console.log("Executing query for //top-cities-with-open-restaurants...");
+    const result = await pool.query(query, [min_open_restaurants, min_avg_rating]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+async function getMultiLegFlightsWithDiverseDining(req, res) {
+  const {
+    min_restaurants = 100,
+    min_unique_cuisines = 50,
+    min_avg_rating = 3.5,
+    min_layover_duration = 120,
+    limit = 15
+  } = req.query;
+
+  const query = `
+    SELECT
+        a1.city_name AS origin,
+        a2.city_name AS layover_city,
+        a3.city_name AS final_city,
+        f1.crs_arr_time AS layover_arrival_time,
+        f2.crs_dep_time AS next_flight_time,
+        f2.crs_dep_time - f1.crs_arr_time AS layover_duration,
+        mv.restaurant_count,
+        mv.unique_cuisine_types,
+        mv.avg_rating
+    FROM flights f1
+    JOIN flights f2
+      ON f1.dest_airport_id = f2.origin_airport_id
+      AND f1.flight_date = f2.flight_date
+    JOIN airports a1 ON f1.origin_airport_id = a1.airport_id
+    JOIN airports a2 ON f1.dest_airport_id = a2.airport_id
+    JOIN airports a3 ON f2.dest_airport_id = a3.airport_id
+    JOIN mv_layover_diverse_dining mv
+      ON a2.city_name = mv.city AND a2.state_name = mv.state
+    WHERE mv.restaurant_count >= $1::integer
+      AND mv.unique_cuisine_types >= $2::integer
+      AND mv.avg_rating >= $3::float
+      AND (f2.crs_dep_time - f1.crs_arr_time) >= $4::integer
+      AND a3.city_name <> a1.city_name
+    LIMIT $5::integer;
+  `;
+
+  const values = [
+    parseInt(min_restaurants, 10),      
+    parseInt(min_unique_cuisines, 10), 
+    parseFloat(min_avg_rating),         
+    parseInt(min_layover_duration, 10), 
+    parseInt(limit, 10)                 
+  ];
+
+  try {
+    console.log("Executing query for /multi-leg-flights-with-diverse-dining...");
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).send("Database query failed.");
+  }
+}
+
+
 module.exports = {
   getTenRestaurants,
   getLayoverRestaurants,
@@ -271,5 +363,7 @@ module.exports = {
   getGoodRestaurantDestinations,
   getThreeCityFlightRoutes,
   getTopThreeCityPaths,
-  getTopRestaurantCities
+  getTopRestaurantCities,
+  getFlightsToCitiesWithOpenRestaurants,
+  getMultiLegFlightsWithDiverseDining
 };
