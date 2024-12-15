@@ -197,7 +197,7 @@ async function getTopThreeCityPaths(req, res) {
   } = req.query;
 
   const query = `
-    SELECT 
+    SELECT DISTINCT
       a1.city_name as start_city,
       a1.state_name as start_state,
       a2.city_name as connection_city,
