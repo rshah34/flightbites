@@ -112,46 +112,66 @@ async function getLayoverRestaurants(req, res) {
   }
 }
 
-
-/* ---- Food Tour Flights ---- */
 async function getFoodTourFlights(req, res) {
   const { origin_city, min_stars = 4.5, limit = 10 } = req.query;
 
+  // Initialize parameters with min_stars and limit
+  const values = [min_stars];
+  let originCityCondition = "";
+
+  if (origin_city) {
+    values.push(origin_city);
+    originCityCondition = `AND oa.city_name = $${values.length}::VARCHAR`;
+  }
+
+  values.push(limit);
+
   const query = `
     WITH high_rated_restaurants AS (
-       SELECT city, state, name
-       FROM restaurants
-       WHERE stars >= $1 AND is_open = TRUE
+      SELECT city, state, name
+      FROM restaurants
+      WHERE stars >= $1 AND is_open = TRUE
     ),
     connecting_flights AS (
-        SELECT f1.origin_city_name AS origin_city, f1.origin_state_name AS origin_state,
-               f1.dest_city_name AS layover_city, f1.dest_state_name AS layover_state,
-               f2.dest_city_name AS final_destination_city, f2.dest_state_name AS final_destination_state,
-               f1.flight_date
-        FROM flights f1
-        JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-                      AND f1.dest_state_name = f2.origin_state_name
-                      AND f1.flight_date = f2.flight_date
-        WHERE EXISTS (
-            SELECT 1 FROM high_rated_restaurants hr
-            WHERE hr.city = f1.dest_city_name AND hr.state = f1.dest_state_name
-        ) AND EXISTS (
-            SELECT 1 FROM high_rated_restaurants hr
-            WHERE hr.city = f2.dest_city_name AND hr.state = f2.dest_state_name
-        )
-        ${origin_city ? "AND f1.origin_city_name = $2" : ""}
+      SELECT
+        oa.city_name AS origin_city,
+        oa.state_name AS origin_state,
+        la.city_name AS layover_city,
+        la.state_name AS layover_state,
+        da.city_name AS final_destination_city,
+        da.state_name AS final_destination_state,
+        f1.flight_date
+      FROM flights f1
+      JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+      JOIN airports la ON f1.dest_airport_id = la.airport_id
+      JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id
+                     AND f1.flight_date = f2.flight_date
+      JOIN airports da ON f2.dest_airport_id = da.airport_id
+      WHERE EXISTS (
+        SELECT 1 FROM high_rated_restaurants hr
+        WHERE hr.city = la.city_name AND hr.state = la.state_name
+      )
+      AND EXISTS (
+        SELECT 1 FROM high_rated_restaurants hr
+        WHERE hr.city = da.city_name AND hr.state = da.state_name
+      )
+      ${originCityCondition}
     )
-    SELECT cf.origin_city, cf.origin_state, cf.layover_city, cf.layover_state,
-          cf.final_destination_city, cf.final_destination_state,
-          lr1.name AS layover_restaurant, lr2.name AS destination_restaurant
+    SELECT
+      cf.origin_city,
+      cf.origin_state,
+      cf.layover_city,
+      cf.layover_state,
+      cf.final_destination_city,
+      cf.final_destination_state,
+      lr1.name AS layover_restaurant,
+      lr2.name AS destination_restaurant
     FROM connecting_flights cf
     JOIN high_rated_restaurants lr1 ON cf.layover_city = lr1.city AND cf.layover_state = lr1.state
     JOIN high_rated_restaurants lr2 ON cf.final_destination_city = lr2.city AND cf.final_destination_state = lr2.state
     ORDER BY cf.origin_city, cf.final_destination_city
-    LIMIT $3;
+    LIMIT $${values.length};
   `;
-
-  const values = [min_stars, origin_city, limit].filter((v) => v !== undefined);
 
   try {
     console.log("Executing query for /food-tour-flights...");
@@ -163,50 +183,59 @@ async function getFoodTourFlights(req, res) {
   }
 }
 
+
+
+
+
 /* ---- Good Restaurant Destinations ---- */
 async function getGoodRestaurantDestinations(req, res) {
   const { origin_city, min_restaurants = 3, min_stars = 4.0, limit = 10 } = req.query;
 
   const query = `
     WITH good_restaurants AS (
-       SELECT
-           city,
-           state,
-           COUNT(DISTINCT restaurant_id) as restaurant_count,
-           ROUND(AVG(stars), 2) as avg_rating
-       FROM restaurants
-       WHERE is_open AND stars >= $1
-       GROUP BY city, state
-       HAVING COUNT(DISTINCT restaurant_id) >= $2
+      SELECT
+        city,
+        state,
+        COUNT(DISTINCT restaurant_id) AS restaurant_count,
+        ROUND(AVG(stars), 2) AS avg_rating
+      FROM restaurants
+      WHERE is_open AND stars >= $1
+      GROUP BY city, state
+      HAVING COUNT(DISTINCT restaurant_id) >= $2
     ),
     connecting_flights AS (
-       SELECT DISTINCT
-           f1.origin_city_name,
-           f1.dest_city_name,
-           f2.dest_city_name as final_city,
-           f2.dest_state_name
-       FROM flights f1
-       JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-                       AND f1.flight_date = f2.flight_date
-       ${origin_city ? "WHERE f1.origin_city_name = $3" : ""}
+      SELECT DISTINCT
+        oa.city_name AS origin_city,
+        ca.city_name AS connection_city,
+        da.city_name AS final_city,
+        da.state_name AS final_state
+      FROM flights f1
+      JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+      JOIN airports ca ON f1.dest_airport_id = ca.airport_id
+      JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id
+                     AND f1.flight_date = f2.flight_date
+      JOIN airports da ON f2.dest_airport_id = da.airport_id
+      ${origin_city ? "WHERE oa.city_name = $3::VARCHAR" : ""}
     )
     SELECT
-       cf.origin_city_name as origin_city,
-       cf.dest_city_name as connection_city,
-       cf.final_city,
-       gr.restaurant_count as restaurants_at_destination,
-       gr.avg_rating
+      cf.origin_city,
+      cf.connection_city,
+      cf.final_city,
+      gr.restaurant_count AS restaurants_at_destination,
+      gr.avg_rating
     FROM connecting_flights cf
-    JOIN good_restaurants gr ON cf.final_city = gr.city
-                          AND cf.dest_state_name = gr.state
+    JOIN good_restaurants gr ON cf.final_city = gr.city AND cf.final_state = gr.state
     ORDER BY gr.avg_rating DESC, gr.restaurant_count DESC
-    LIMIT $4;
+    LIMIT $${origin_city ? 4 : 3};
   `;
 
-  const values = [min_stars, min_restaurants, origin_city, limit].filter((v) => v !== undefined);
+  // Create the values array dynamically based on whether origin_city is provided
+  const values = origin_city
+    ? [min_stars, min_restaurants, origin_city, limit]
+    : [min_stars, min_restaurants, limit];
 
   try {
-    console.log("Executing query for /good-restaurants-destinations...");
+    console.log("Executing query for /good-restaurant-destinations...");
     const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
@@ -214,6 +243,8 @@ async function getGoodRestaurantDestinations(req, res) {
     res.status(500).send("Database query failed.");
   }
 }
+
+
 
 /* ---- Three-City Flight Routes ---- */
 async function getThreeCityFlightRoutes(req, res) {
