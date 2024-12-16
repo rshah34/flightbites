@@ -35,6 +35,7 @@ async function getTenRestaurants(req, res) {
   `;
 
   try {
+    // to test the db connection
     console.log("Executing query for /restaurants...");
     const result = await pool.query(query); 
     res.json(result.rows); 
@@ -96,14 +97,15 @@ async function getLayoverRestaurants(req, res) {
       JOIN restaurants r ON fl.layover_city = r.city
       LIMIT $5;
     `;
-
+      
+    // get the result and account for the optional inputs
     const result = await pool.query(query, [
       origin_city || null,
       date || null,
       destination_city || null,
       min_layover_duration,
       limit,
-    ]);
+    ]); 
 
     res.json(result.rows);
   } catch (err) {
@@ -120,6 +122,7 @@ async function getFoodTourFlights(req, res) {
   let originCityCondition = "";
 
   if (origin_city) {
+    // account for optional param
     values.push(origin_city);
     originCityCondition = `AND oa.city_name = $${values.length}::VARCHAR`;
   }
@@ -162,7 +165,7 @@ async function getFoodTourFlights(req, res) {
     final_destination_state,
     layover_restaurant,
     destination_restaurant
-  FROM connecting_flights
+  FROM connecting_flights 
   ORDER BY origin_city, final_destination_city
   LIMIT $${values.length};
 `;
@@ -187,6 +190,7 @@ async function getFoodTourFlights(req, res) {
 /* ---- Good Restaurant Destinations ---- */
 async function getGoodRestaurantDestinations(req, res) {
   const { origin_city, min_restaurants = 3, min_stars = 4.0, limit = 10 } = req.query;
+  // set with default vals as well
 
   const query = `
   WITH good_restaurants AS (
@@ -294,6 +298,7 @@ async function getThreeCityFlightRoutes(req, res) {
     LIMIT $4;
   `;
 
+  // fix the bug: convert values to desired type when needed, set defaults
   const values = [parseFloat(min_stars), parseInt(min_restaurants_per_city, 10), parseInt(min_available_days, 10), parseInt(limit, 10)];
 
   try {
@@ -348,6 +353,7 @@ async function getTopThreeCityPaths(req, res) {
 /* ---- Popular Chain Destinations ---- */
 async function getPopularChainDestinations(req, res) {
   const { min_chain_count = 3, limit = 15 } = req.query;
+  // account for optional params
 
   const query = `
   WITH chain_locations AS (
@@ -377,6 +383,7 @@ async function getPopularChainDestinations(req, res) {
   LIMIT $2;
   `;
 
+  // convert types
   const values = [parseInt(min_chain_count, 10), parseInt(limit, 10)];
 
   try {
@@ -451,6 +458,7 @@ async function getFlightsToCitiesWithOpenRestaurants(req, res) {
   `;
 
   try {
+    // consrt in arr
     console.log("Executing query for //top-cities-with-open-restaurants...");
     const result = await pool.query(query, [min_open_restaurants, min_avg_rating]);
     res.json(result.rows);
@@ -464,6 +472,7 @@ async function getFlightsToCitiesWithOpenRestaurants(req, res) {
 }
 
 async function getMultiLegFlightsWithDiverseDining(req, res) {
+  // set w defaults
   const {
     min_restaurants = 100,
     min_unique_cuisines = 50,
@@ -583,6 +592,7 @@ async function getDestinationScores(req, res) {
   LIMIT $3;
   `;
 
+  // construct values arr by converting types of the values
   const values = [
     parseInt(min_total_restaurants, 10),
     parseFloat(min_avg_rating),
