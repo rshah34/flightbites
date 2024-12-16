@@ -1,7 +1,26 @@
+const config = require('./config.json');
 const { Pool } = require('pg');
-const config = require('./db-config.js');
 
-const pool = new Pool(config);
+const pool = new Pool({
+  host: config.rds_host,
+  port: config.rds_port,
+  user: config.rds_user,
+  password: config.rds_password,
+  database: config.rds_db,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+// Test database connection
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Error connecting to the database:', err);
+  } else {
+    console.log('Successfully connected to database');
+    release();
+  }
+});
 
 /* -------------------------------------------------- */
 /* ------------------- Route Handlers --------------- */
@@ -16,6 +35,7 @@ async function getTenRestaurants(req, res) {
   `;
 
   try {
+    // to test the db connection
     console.log("Executing query for /restaurants...");
     const result = await pool.query(query); 
     res.json(result.rows); 
@@ -26,91 +46,130 @@ async function getTenRestaurants(req, res) {
 }
 
 async function getLayoverRestaurants(req, res) {
-  const {
-    origin_city,
-    destination_city,
-    date,
-    min_layover_duration = 120,
-    limit = 10,
-  } = req.query;
-
-  const query = `
-    WITH layover_flights AS (
-       SELECT f1.flight_id AS first_leg, f2.flight_id AS second_leg,
-              f1.dest_city_name AS layover_city, f1.dest_state_name AS layover_state,
-              f1.crs_arr_time AS arrival_time, f2.crs_dep_time AS next_dep_time,
-              (f2.crs_dep_time - f1.crs_arr_time) AS layover_duration
-       FROM flights f1
-       JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-                     AND f1.dest_state_name = f2.origin_state_name
-                     AND f1.flight_date = f2.flight_date
-       WHERE (f2.crs_dep_time - f1.crs_arr_time) >= $1
-       ${origin_city ? "AND f1.origin_city_name = $2" : ""}
-       ${destination_city ? "AND f2.dest_city_name = $3" : ""}
-       ${date ? "AND f1.flight_date = $4" : ""}
-    )
-    SELECT lf.first_leg, lf.second_leg, lf.layover_city, lf.arrival_time, lf.next_dep_time,
-          r.name AS restaurant_name, r.stars, r.review_count
-    FROM layover_flights lf
-    JOIN restaurants r ON lf.layover_city = r.city AND lf.layover_state = r.state
-    WHERE r.is_open = TRUE
-    ORDER BY lf.layover_city, r.stars DESC
-    LIMIT $5;
-  `;
-
-  const values = [min_layover_duration, origin_city, destination_city, date, limit].filter(
-    (v) => v !== undefined
-  );
-
   try {
-    console.log("Executing query for /layover-restaurants...");
-    const result = await pool.query(query, values);
+    const {
+      origin_city,
+      destination_city,
+      date,
+      min_layover_duration = 120,
+      limit = 10,
+    } = req.query;
+
+    const query = `
+      WITH first_legs AS (
+        SELECT
+          f1.flight_id AS first_leg,
+          f1.flight_date,
+          f1.crs_arr_time AS arrival_time,
+          oa.city_name AS origin_city,
+          da.city_name AS layover_city,
+          f1.dest_airport_id
+        FROM flights f1
+        JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+        JOIN airports da ON f1.dest_airport_id = da.airport_id
+        WHERE ($1::VARCHAR IS NULL OR oa.city_name = $1)
+          AND ($2::DATE IS NULL OR f1.flight_date = $2)
+      ),
+      second_legs AS (
+        SELECT
+          f2.flight_id AS second_leg,
+          f2.flight_date,
+          f2.crs_dep_time AS next_dep_time,
+          f2.origin_airport_id,
+          da.city_name AS destination_city
+        FROM flights f2
+        JOIN airports da ON f2.dest_airport_id = da.airport_id
+        WHERE ($3::VARCHAR IS NULL OR da.city_name = $3)
+      )
+      SELECT
+        fl.first_leg,
+        sl.second_leg,
+        fl.layover_city,
+        fl.arrival_time,
+        sl.next_dep_time,
+        r.name AS restaurant_name,
+        r.stars,
+        r.review_count
+      FROM first_legs fl
+      JOIN second_legs sl ON fl.dest_airport_id = sl.origin_airport_id
+        AND sl.flight_date = fl.flight_date
+        AND (sl.next_dep_time - fl.arrival_time) >= $4
+      JOIN restaurants r ON fl.layover_city = r.city
+      LIMIT $5;
+    `;
+      
+    // get the result and account for the optional inputs
+    const result = await pool.query(query, [
+      origin_city || null,
+      date || null,
+      destination_city || null,
+      min_layover_duration,
+      limit,
+    ]); 
+
     res.json(result.rows);
   } catch (err) {
-    console.error("Database query failed:", err);
-    res.status(500).send("Database query failed.");
+    console.error('Database query error:', err);
+    res.status(500).json({ error: 'Database query failed' });
   }
 }
 
-/* ---- Food Tour Flights ---- */
 async function getFoodTourFlights(req, res) {
   const { origin_city, min_stars = 4.5, limit = 10 } = req.query;
 
-  const query = `
-    WITH high_rated_restaurants AS (
-       SELECT city, state, name
-       FROM restaurants
-       WHERE stars >= $1 AND is_open = TRUE
-    ),
-    connecting_flights AS (
-        SELECT f1.origin_city_name AS origin_city, f1.origin_state_name AS origin_state,
-               f1.dest_city_name AS layover_city, f1.dest_state_name AS layover_state,
-               f2.dest_city_name AS final_destination_city, f2.dest_state_name AS final_destination_state,
-               f1.flight_date
-        FROM flights f1
-        JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-                      AND f1.dest_state_name = f2.origin_state_name
-                      AND f1.flight_date = f2.flight_date
-        WHERE EXISTS (
-            SELECT 1 FROM high_rated_restaurants hr
-            WHERE hr.city = f1.dest_city_name AND hr.state = f1.dest_state_name
-        ) AND EXISTS (
-            SELECT 1 FROM high_rated_restaurants hr
-            WHERE hr.city = f2.dest_city_name AND hr.state = f2.dest_state_name
-        )
-        ${origin_city ? "AND f1.origin_city_name = $2" : ""}
-    )
-    SELECT cf.origin_city, cf.origin_state, cf.layover_city, cf.layover_state,
-          cf.final_destination_city, cf.final_destination_state,
-          lr1.name AS layover_restaurant, lr2.name AS destination_restaurant
-    FROM connecting_flights cf
-    JOIN high_rated_restaurants lr1 ON cf.layover_city = lr1.city AND cf.layover_state = lr1.state
-    JOIN high_rated_restaurants lr2 ON cf.final_destination_city = lr2.city AND cf.final_destination_state = lr2.state
-    ORDER BY cf.origin_city, cf.final_destination_city
-    LIMIT $3;
-  `;
+  // Initialize parameters with min_stars and limit
+  const values = [min_stars];
+  let originCityCondition = "";
 
-  const values = [min_stars, origin_city, limit].filter((v) => v !== undefined);
+  if (origin_city) {
+    // account for optional param
+    values.push(origin_city);
+    originCityCondition = `AND oa.city_name = $${values.length}::VARCHAR`;
+  }
+
+  values.push(limit);
+
+  const query = `
+  WITH high_rated_restaurants AS (
+    SELECT city, state, name
+    FROM restaurants
+    WHERE stars >= $1 AND is_open = TRUE
+  ),
+  connecting_flights AS (
+    SELECT
+      oa.city_name AS origin_city,
+      oa.state_name AS origin_state,
+      la.city_name AS layover_city,
+      la.state_name AS layover_state,
+      da.city_name AS final_destination_city,
+      da.state_name AS final_destination_state,
+      f1.flight_date,
+      hr1.name AS layover_restaurant,
+      hr2.name AS destination_restaurant
+    FROM flights f1
+    JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+    JOIN airports la ON f1.dest_airport_id = la.airport_id
+    JOIN high_rated_restaurants hr1 ON la.city_name = hr1.city AND la.state_name = hr1.state
+    JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id
+                   AND f1.flight_date = f2.flight_date
+    JOIN airports da ON f2.dest_airport_id = da.airport_id
+    JOIN high_rated_restaurants hr2 ON da.city_name = hr2.city AND da.state_name = hr2.state
+    ${originCityCondition}
+  )
+  SELECT
+    origin_city,
+    origin_state,
+    layover_city,
+    layover_state,
+    final_destination_city,
+    final_destination_state,
+    layover_restaurant,
+    destination_restaurant
+  FROM connecting_flights 
+  ORDER BY origin_city, final_destination_city
+  LIMIT $${values.length};
+`;
+
 
   try {
     console.log("Executing query for /food-tour-flights...");
@@ -122,50 +181,63 @@ async function getFoodTourFlights(req, res) {
   }
 }
 
+
+
+
+
+
+
 /* ---- Good Restaurant Destinations ---- */
 async function getGoodRestaurantDestinations(req, res) {
   const { origin_city, min_restaurants = 3, min_stars = 4.0, limit = 10 } = req.query;
+  // set with default vals as well
 
   const query = `
-    WITH good_restaurants AS (
-       SELECT
-           city,
-           state,
-           COUNT(DISTINCT restaurant_id) as restaurant_count,
-           ROUND(AVG(stars), 2) as avg_rating
-       FROM restaurants
-       WHERE is_open AND stars >= $1
-       GROUP BY city, state
-       HAVING COUNT(DISTINCT restaurant_id) >= $2
-    ),
-    connecting_flights AS (
-       SELECT DISTINCT
-           f1.origin_city_name,
-           f1.dest_city_name,
-           f2.dest_city_name as final_city,
-           f2.dest_state_name
-       FROM flights f1
-       JOIN flights f2 ON f1.dest_city_name = f2.origin_city_name
-                       AND f1.flight_date = f2.flight_date
-       ${origin_city ? "WHERE f1.origin_city_name = $3" : ""}
-    )
+  WITH good_restaurants AS (
     SELECT
-       cf.origin_city_name as origin_city,
-       cf.dest_city_name as connection_city,
-       cf.final_city,
-       gr.restaurant_count as restaurants_at_destination,
-       gr.avg_rating
-    FROM connecting_flights cf
-    JOIN good_restaurants gr ON cf.final_city = gr.city
-                          AND cf.dest_state_name = gr.state
-    ORDER BY gr.avg_rating DESC, gr.restaurant_count DESC
-    LIMIT $4;
-  `;
+      city,
+      state,
+      COUNT(DISTINCT restaurant_id) AS restaurant_count,
+      ROUND(AVG(stars), 2) AS avg_rating
+    FROM restaurants
+    WHERE is_open AND stars >= $1
+    GROUP BY city, state
+    HAVING COUNT(DISTINCT restaurant_id) >= $2
+  ),
+  connecting_flights AS (
+    SELECT
+      oa.city_name AS origin_city,
+      ca.city_name AS connection_city,
+      da.city_name AS final_city,
+      da.state_name AS final_state
+    FROM flights f1
+    JOIN airports oa ON f1.origin_airport_id = oa.airport_id
+    JOIN airports ca ON f1.dest_airport_id = ca.airport_id
+    JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id
+                   AND f1.flight_date = f2.flight_date
+    JOIN airports da ON f2.dest_airport_id = da.airport_id
+    ${origin_city ? "WHERE oa.city_name = $3::VARCHAR" : ""}
+  )
+  SELECT
+    cf.origin_city,
+    cf.connection_city,
+    cf.final_city,
+    gr.restaurant_count AS restaurants_at_destination,
+    gr.avg_rating
+  FROM connecting_flights cf
+  JOIN good_restaurants gr ON cf.final_city = gr.city AND cf.final_state = gr.state
+  ORDER BY gr.avg_rating DESC, gr.restaurant_count DESC
+  LIMIT $${origin_city ? 4 : 3};
+`;
 
-  const values = [min_stars, min_restaurants, origin_city, limit].filter((v) => v !== undefined);
+
+  // Create the values array dynamically based on whether origin_city is provided
+  const values = origin_city
+    ? [min_stars, min_restaurants, origin_city, limit]
+    : [min_stars, min_restaurants, limit];
 
   try {
-    console.log("Executing query for /good-restaurants-destinations...");
+    console.log("Executing query for /good-restaurant-destinations...");
     const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
@@ -173,6 +245,8 @@ async function getGoodRestaurantDestinations(req, res) {
     res.status(500).send("Database query failed.");
   }
 }
+
+
 
 /* ---- Three-City Flight Routes ---- */
 async function getThreeCityFlightRoutes(req, res) {
@@ -185,101 +259,55 @@ async function getThreeCityFlightRoutes(req, res) {
 
   const query = `
     WITH good_restaurants AS (
-      -- First, identify cities with sufficient good restaurants
-      SELECT 
-        city,
-        state,
-        COUNT(*) as restaurant_count,
-        AVG(stars) as avg_rating
+      SELECT city, state, COUNT(*) AS restaurant_count, AVG(stars) AS avg_rating
       FROM restaurants
-      WHERE is_open = true AND stars >= $1
+      WHERE stars >= $1 AND is_open = TRUE
       GROUP BY city, state
       HAVING COUNT(*) >= $2
     ),
-    available_routes AS (
-      -- Find all possible three-city combinations with flights
-      SELECT DISTINCT
-        f1.origin_city_name as start_city,
-        f1.origin_state_name as start_state,
-        f1.dest_city_name as connection_city,
-        f1.dest_state_name as connection_state,
-        f2.dest_city_name as final_city,
-        f2.dest_state_name as final_state,
-        COUNT(DISTINCT f1.flight_date) as available_days,
-        COUNT(DISTINCT f1.flight_id || '-' || f2.flight_id) as route_options
+    flight_combinations AS (
+      SELECT 
+        a1.city_name AS start_city,
+        a2.city_name AS connection_city,
+        a3.city_name AS final_city,
+        COUNT(DISTINCT f1.flight_date) AS available_days
       FROM flights f1
-      JOIN flights f2 
-        ON f1.dest_city_name = f2.origin_city_name
-        AND f1.dest_state_name = f2.origin_state_name
-        AND f1.flight_date = f2.flight_date
-      GROUP BY 
-        f1.origin_city_name, f1.origin_state_name,
-        f1.dest_city_name, f1.dest_state_name,
-        f2.dest_city_name, f2.dest_state_name
+      JOIN flights f2 ON f1.dest_airport_id = f2.origin_airport_id AND f1.flight_date = f2.flight_date
+      JOIN airports a1 ON f1.origin_airport_id = a1.airport_id
+      JOIN airports a2 ON f1.dest_airport_id = a2.airport_id
+      JOIN airports a3 ON f2.dest_airport_id = a3.airport_id
+      WHERE a1.city_name <> a3.city_name
+      GROUP BY a1.city_name, a2.city_name, a3.city_name
       HAVING COUNT(DISTINCT f1.flight_date) >= $3
     )
     SELECT 
-      ar.start_city,
-      ar.start_state,
-      ar.connection_city,
-      ar.connection_state,
-      ar.final_city,
-      ar.final_state,
-      gr1.restaurant_count as origin_good_food,
-      gr2.restaurant_count as connection_good_food,
-      gr3.restaurant_count as destination_good_food,
-      ar.available_days,
-      ar.route_options,
-      ROUND(AVG(gr1.avg_rating + gr2.avg_rating + gr3.avg_rating)/3, 2) as route_avg_rating,
-      -- Calculate route score based on restaurants and flight availability
-      ROUND(
-        (gr1.restaurant_count + gr2.restaurant_count + gr3.restaurant_count) * 
-        (ar.available_days/7.0) * 
-        ((gr1.avg_rating + gr2.avg_rating + gr3.avg_rating)/3) * 
-        LOG(ar.route_options + 1), 
-        2
-      ) as route_score
-    FROM available_routes ar
-    JOIN good_restaurants gr1 
-      ON ar.start_city = gr1.city AND ar.start_state = gr1.state
-    JOIN good_restaurants gr2 
-      ON ar.connection_city = gr2.city AND ar.connection_state = gr2.state
-    JOIN good_restaurants gr3 
-      ON ar.final_city = gr3.city AND ar.final_state = gr3.state
+      fc.start_city,
+      fc.connection_city,
+      fc.final_city,
+      gr1.restaurant_count AS origin_good_food,
+      gr2.restaurant_count AS connection_good_food,
+      gr3.restaurant_count AS destination_good_food,
+      fc.available_days,
+      ROUND((gr1.avg_rating + gr2.avg_rating + gr3.avg_rating) / 3, 2) AS route_avg_rating,
+      ROUND((gr1.restaurant_count + gr2.restaurant_count + gr3.restaurant_count) / 3.0, 2) * fc.available_days AS route_score
+    FROM flight_combinations fc
+    JOIN good_restaurants gr1 ON fc.start_city = gr1.city
+    JOIN good_restaurants gr2 ON fc.connection_city = gr2.city
+    JOIN good_restaurants gr3 ON fc.final_city = gr3.city
     ORDER BY route_score DESC
     LIMIT $4;
   `;
 
-  const values = [min_stars, min_restaurants_per_city, min_available_days, limit];
+  // fix the bug: convert values to desired type when needed, set defaults
+  const values = [parseFloat(min_stars), parseInt(min_restaurants_per_city, 10), parseInt(min_available_days, 10), parseInt(limit, 10)];
 
   try {
     console.log("Executing query for /three-city-flight-routes...");
-    console.log("Parameters:", values);
-    
     const result = await pool.query(query, values);
-    
-    // Transform the results to match the specified response format
-    const formattedResults = result.rows.map(row => ({
-      start_city: row.start_city,
-      connection_city: row.connection_city,
-      final_city: row.final_city,
-      origin_good_food: row.origin_good_food,
-      connection_good_food: row.connection_good_food,
-      destination_good_food: row.destination_good_food,
-      available_days: row.available_days,
-      route_options: row.route_options,
-      route_avg_rating: row.route_avg_rating,
-      route_score: row.route_score
-    }));
-
-    res.json(formattedResults);
+    res.json(result.rows);
   } catch (err) {
     console.error("Database query failed:", err);
-    console.error("Error details:", err.message);
-    res.status(500).json({
-      error: "Database query failed",
-      message: err.message
-    });
+    res.status(500).json({ error: "Database query failed", message: err.message });
   }
 }
 
@@ -290,7 +318,7 @@ async function getTopThreeCityPaths(req, res) {
   } = req.query;
 
   const query = `
-    SELECT 
+    SELECT DISTINCT
       a1.city_name as start_city,
       a1.state_name as start_state,
       a2.city_name as connection_city,
@@ -312,6 +340,55 @@ async function getTopThreeCityPaths(req, res) {
   try {
     console.log("Executing query for /top-3-city-flight-paths...");
     const result = await pool.query(query, [limit]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+/* ---- Popular Chain Destinations ---- */
+async function getPopularChainDestinations(req, res) {
+  const { min_chain_count = 3, limit = 15 } = req.query;
+  // account for optional params
+
+  const query = `
+  WITH chain_locations AS (
+    SELECT
+      rc.category AS chain_name,
+      r.city,
+      r.state,
+      COUNT(*) AS location_count
+    FROM restaurant_categories rc
+    JOIN restaurants r ON rc.restaurant_id = r.restaurant_id
+    WHERE rc.category IS NOT NULL
+    GROUP BY rc.category, r.city, r.state
+    HAVING COUNT(*) >= $1
+  )
+  SELECT DISTINCT ON (a2.city_name, a2.state_name)
+    f.flight_id,
+    a1.city_name AS origin_city_name,
+    a2.city_name AS dest_city_name,
+    a2.state_name AS dest_state_name,
+    cl.chain_name AS popular_chain,
+    cl.location_count AS count_in_city
+  FROM flights f
+  JOIN airports a1 ON f.origin_airport_id = a1.airport_id
+  JOIN airports a2 ON f.dest_airport_id = a2.airport_id
+  JOIN chain_locations cl ON cl.city = a2.city_name AND cl.state = a2.state_name
+  ORDER BY a2.city_name, a2.state_name, cl.location_count DESC
+  LIMIT $2;
+  `;
+
+  // convert types
+  const values = [parseInt(min_chain_count, 10), parseInt(limit, 10)];
+
+  try {
+    console.log("Executing query for /flights-to-cities-with-popular-chains...");
+    const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
     console.error("Database query failed:", err);
@@ -357,6 +434,185 @@ async function getTopRestaurantCities(req, res) {
   }
 }
 
+async function getFlightsToCitiesWithOpenRestaurants(req, res) {
+  const {
+    min_open_restaurants = 1, 
+    min_avg_rating = 3.0
+  } = req.query;
+
+  const query = `
+    SELECT
+      f.flight_id,
+      a1.city_name AS origin_city_name,
+      a2.city_name AS dest_city_name,
+      a2.state_name AS dest_state_name,
+      rs.restaurant_count AS open_count,
+      COALESCE(rs.avg_rating, 0) AS avg_rating
+  FROM flights f
+  JOIN airports a1 ON f.origin_airport_id = a1.airport_id
+  JOIN airports a2 ON f.dest_airport_id = a2.airport_id
+  JOIN mv_restaurant_stats rs ON a2.city_name = rs.city AND a2.state_name = rs.state
+  WHERE rs.restaurant_count >= $1 
+    AND rs.avg_rating >= $2      
+  ORDER BY rs.restaurant_count DESC
+  `;
+
+  try {
+    // consrt in arr
+    console.log("Executing query for //top-cities-with-open-restaurants...");
+    const result = await pool.query(query, [min_open_restaurants, min_avg_rating]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+async function getMultiLegFlightsWithDiverseDining(req, res) {
+  // set w defaults
+  const {
+    min_restaurants = 100,
+    min_unique_cuisines = 50,
+    min_avg_rating = 3.5,
+    min_layover_duration = 120,
+    limit = 15
+  } = req.query;
+
+  const query = `
+    SELECT
+        a1.city_name AS origin,
+        a2.city_name AS layover_city,
+        a3.city_name AS final_city,
+        f1.crs_arr_time AS layover_arrival_time,
+        f2.crs_dep_time AS next_flight_time,
+        f2.crs_dep_time - f1.crs_arr_time AS layover_duration,
+        mv.restaurant_count,
+        mv.unique_cuisine_types,
+        mv.avg_rating
+    FROM flights f1
+    JOIN flights f2
+      ON f1.dest_airport_id = f2.origin_airport_id
+      AND f1.flight_date = f2.flight_date
+    JOIN airports a1 ON f1.origin_airport_id = a1.airport_id
+    JOIN airports a2 ON f1.dest_airport_id = a2.airport_id
+    JOIN airports a3 ON f2.dest_airport_id = a3.airport_id
+    JOIN mv_layover_diverse_dining mv
+      ON a2.city_name = mv.city AND a2.state_name = mv.state
+    WHERE mv.restaurant_count >= $1::integer
+      AND mv.unique_cuisine_types >= $2::integer
+      AND mv.avg_rating >= $3::float
+      AND (f2.crs_dep_time - f1.crs_arr_time) >= $4::integer
+      AND a3.city_name <> a1.city_name
+    LIMIT $5::integer;
+  `;
+
+  const values = [
+    parseInt(min_restaurants, 10),      
+    parseInt(min_unique_cuisines, 10), 
+    parseFloat(min_avg_rating),         
+    parseInt(min_layover_duration, 10), 
+    parseInt(limit, 10)                 
+  ];
+
+  try {
+    console.log("Executing query for /multi-leg-flights-with-diverse-dining...");
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).send("Database query failed.");
+  }
+}
+
+async function getDestinationScores(req, res) {
+  const {
+    min_total_restaurants = 10,
+    min_avg_rating = 3.5,
+    limit = 20
+  } = req.query;
+
+  const query = `
+  WITH restaurant_stats AS (
+    SELECT 
+      city AS dest_city_name,
+      state AS dest_state_name,
+      COUNT(*) AS total_restaurants,
+      AVG(stars) AS avg_rating,
+      COUNT(*) FILTER (WHERE stars >= $2) AS good_restaurants
+    FROM restaurants
+    WHERE is_open = TRUE
+    GROUP BY city, state
+    HAVING COUNT(*) >= $1
+  ),
+  flight_stats AS (
+    SELECT 
+      a2.city_name AS dest_city_name,
+      a2.state_name AS dest_state_name,
+      COALESCE(COUNT(DISTINCT f.flight_date), 0) AS total_busy_days,
+      COALESCE(
+        CASE 
+          WHEN COUNT(DISTINCT f.flight_date) > 0 
+          THEN COUNT(*)::float / COUNT(DISTINCT f.flight_date)
+          ELSE 0 
+        END, 0) AS avg_daily_arrivals,
+      COALESCE(COUNT(*) / 7.0, 0) AS avg_weekly_arrivals,
+      COALESCE(
+        CASE 
+          WHEN COUNT(*) > 0 
+          THEN COUNT(DISTINCT f.flight_date)::float / NULLIF(COUNT(*) / 7.0, 0)
+          ELSE 0 
+        END, 0) AS avg_busy_days_per_week
+    FROM airports a2
+    LEFT JOIN flights f ON f.dest_airport_id = a2.airport_id
+    GROUP BY a2.city_name, a2.state_name
+  ),
+  destination_scores AS (
+    SELECT 
+      rs.dest_city_name,
+      rs.dest_state_name,
+      rs.total_restaurants,
+      rs.avg_rating,
+      rs.good_restaurants,
+      COALESCE(fs.total_busy_days, 0) AS total_busy_days,
+      COALESCE(fs.avg_daily_arrivals, 0) AS avg_daily_arrivals,
+      COALESCE(fs.avg_weekly_arrivals, 0) AS avg_weekly_arrivals,
+      COALESCE(fs.avg_busy_days_per_week, 0) AS avg_busy_days_per_week,
+      (rs.avg_rating * rs.good_restaurants + COALESCE(fs.avg_daily_arrivals, 0)) AS destination_score,
+      CASE WHEN COALESCE(fs.avg_weekly_arrivals, 0) >= 100 THEN TRUE ELSE FALSE END AS is_well_connected
+    FROM restaurant_stats rs
+    LEFT JOIN flight_stats fs 
+      ON rs.dest_city_name = fs.dest_city_name AND rs.dest_state_name = fs.dest_state_name
+  )
+  SELECT *
+  FROM destination_scores
+  ORDER BY destination_score DESC
+  LIMIT $3;
+  `;
+
+  // construct values arr by converting types of the values
+  const values = [
+    parseInt(min_total_restaurants, 10),
+    parseFloat(min_avg_rating),
+    parseInt(limit, 10)
+  ];
+
+  try {
+    console.log("Executing query for /destination-scores...");
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database query failed:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      message: err.message
+    });
+  }
+}
+
+
 module.exports = {
   getTenRestaurants,
   getLayoverRestaurants,
@@ -364,5 +620,9 @@ module.exports = {
   getGoodRestaurantDestinations,
   getThreeCityFlightRoutes,
   getTopThreeCityPaths,
-  getTopRestaurantCities
+  getTopRestaurantCities,
+  getFlightsToCitiesWithOpenRestaurants,
+  getMultiLegFlightsWithDiverseDining,
+  getPopularChainDestinations,
+  getDestinationScores
 };
