@@ -38,7 +38,6 @@ export default function PageNavbar() {
           >
             FlightBites
           </Typography>
-
           {/* Navigation Items */}
           <Box
             sx={{

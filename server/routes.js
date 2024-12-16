@@ -29,7 +29,7 @@ pool.connect((err, client, release) => {
 /* ---- (Dashboard) ---- */
 async function getTenRestaurants(req, res) {
   const query = `
-    SELECT restaurant_id
+    SELECT name
     FROM restaurants
     LIMIT 10;
   `;
