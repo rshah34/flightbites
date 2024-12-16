@@ -6,6 +6,7 @@ import {
 const config = require('../config.json');
 import PageNavbar from '../components/PageNavbar';
 
+// Default export function for the "Top Cities for Food Tourism" page
 export default function TopRestaurantCitiesPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +15,7 @@ export default function TopRestaurantCitiesPage() {
   useEffect(() => {
     fetchTopCities();
   }, []);
-
+  // Function to fetch top cities with high-rated restaurants
   const fetchTopCities = async () => {
     try {
       setLoading(true);

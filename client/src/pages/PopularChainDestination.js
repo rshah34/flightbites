@@ -3,34 +3,36 @@ import { Container, Grid, Button, Slider, Typography, Paper, Table, Divider, Tab
 import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
 
+// Default export function for the "Flights to Cities with Popular Chains" page
 export default function PopularChainDestination() {
-  const [minChainCount, setMinChainCount] = useState(3);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [minChainCount, setMinChainCount] = useState(3); 
+  const [results, setResults] = useState([]); 
+  const [loading, setLoading] = useState(false); 
   const [error, setError] = useState(null);
 
+  // Function to fetch flight data for cities with popular chains
   const searchDestinations = async () => {
     setLoading(true);
     setError(null);
 
     const params = new URLSearchParams({
-      min_chain_count: minChainCount,
+      min_chain_count: minChainCount, // Minimum chain count parameter
     });
 
     try {
-        console.log("Got here", `http://${config.server_host}:${config.server_port}/flights-to-cities-with-popular-chains?${params}`)
+      console.log("Fetching data from:", `http://${config.server_host}:${config.server_port}/flights-to-cities-with-popular-chains?${params}`);
       const response = await fetch(`http://${config.server_host}:${config.server_port}/flights-to-cities-with-popular-chains?${params}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`); 
       }
       const data = await response.json();
-      setResults(Array.isArray(data) ? data : []);
+      setResults(Array.isArray(data) ? data : []); 
     } catch (err) {
       console.error(err);
-      setError(err.message);
-      setResults([]);
+      setError(err.message); 
+      setResults([]); 
     } finally {
-      setLoading(false);
+      setLoading(false); 
     }
   };
 
@@ -84,7 +86,7 @@ export default function PopularChainDestination() {
                 min={1}
                 max={50}
                 step={1}
-                onChange={(e, val) => setMinChainCount(val)}
+                onChange={(e, val) => setMinChainCount(val)} // Update state on slider change
                 valueLabelDisplay="auto"
               />
             </Box>

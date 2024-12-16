@@ -7,22 +7,26 @@ import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
 
 export default function DestinationPage() {
+  // State variables to manage filters, results, loading state, and errors
   const [minTotalRestaurants, setMinTotalRestaurants] = useState(10);
   const [limit, setLimit] = useState(20);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Function to fetch destination scores from the backend API
   const fetchDestinationScores = async () => {
     setLoading(true);
     setError(null);
 
+    // Construct query parameters based on user inputs
     const params = new URLSearchParams({
       min_total_restaurants: minTotalRestaurants,
       limit
     });
 
     try {
+      // Fetch data from the backend API
       const response = await fetch(`http://${config.server_host}:${config.server_port}/destination-scores?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -40,9 +44,10 @@ export default function DestinationPage() {
 
   return (
     <div>
+      {/* Navbar component for page navigation */}
       <PageNavbar active="destination-scores" />
       <Container sx={{ padding: '2rem' }}>
-        {/* Page Header */}
+        {/* Page Header Section */}
         <Box 
           sx={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)', 
@@ -70,9 +75,10 @@ export default function DestinationPage() {
           </Typography>
         </Box>
 
-        {/* Filter Controls */}
+        {/* Filter Controls Section */}
         <Divider sx={{ my: 4, borderColor: 'transparent' }} />
         <Grid container spacing={3} sx={{ mb: 2 }}>
+          {/* Filter: Minimum Total Restaurants */}
           <Grid item xs={12} md={6}>
             <Box 
               sx={{
@@ -95,6 +101,8 @@ export default function DestinationPage() {
               />
             </Box>
           </Grid>
+
+          {/* Filter: Limit Results */}
           <Grid item xs={12} md={6}>
             <Box 
               sx={{
@@ -119,7 +127,7 @@ export default function DestinationPage() {
           </Grid>
         </Grid>
 
-        {/* Submit Button */}
+        {/* Submit Button to trigger API call */}
         <Button 
           variant="contained" 
           color="primary" 
@@ -129,19 +137,20 @@ export default function DestinationPage() {
           Submit
         </Button>
 
-        {/* Error Message */}
+        {/* Error Message Display */}
         {error && (
           <Alert severity="error" sx={{ mb: 2, backgroundColor: '#f8d7da', color: '#721c24' }}>
             {error}
           </Alert>
         )}
 
-        {/* Loading State */}
+        {/* Loading Indicator */}
         {loading ? (
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <CircularProgress />
           </Box>
         ) : (
+          // Table to display fetched results
           <TableContainer component={Paper} sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '8px' }}>
             <Table>
               <TableHead sx={{ backgroundColor: '#34495e' }}>
@@ -158,6 +167,7 @@ export default function DestinationPage() {
               </TableHead>
               <TableBody>
                 {results.length > 0 ? (
+                  // Display each row of fetched data
                   results.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell>{row.dest_city_name}</TableCell>
@@ -171,6 +181,7 @@ export default function DestinationPage() {
                     </TableRow>
                   ))
                 ) : (
+                  // Fallback when no results are available
                   <TableRow>
                     <TableCell colSpan={8} align="center">
                       No results found. Adjust the filters and try again.

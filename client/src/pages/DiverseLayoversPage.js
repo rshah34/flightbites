@@ -8,14 +8,16 @@ import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
 
 export default function DiverseLayoversPage() {
+  // State variables to manage filters, results, loading state, and errors
   const [minLayoverDuration, setMinLayoverDuration] = useState(180); // Default: 180 minutes
   const [minUniqueCuisines, setMinUniqueCuisines] = useState(50); // Default: 50 cuisines
   const [minRestaurants, setMinRestaurants] = useState(100); // Default: 100 restaurants
   const [minAvgRating, setMinAvgRating] = useState(3.0); // Default: 3.0 stars
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); 
+  const [error, setError] = useState(null); 
 
+  // Fetches flights with layovers offering diverse dining options based on user filters
   const searchFlights = async () => {
     setLoading(true);
     setError(null);
@@ -28,10 +30,12 @@ export default function DiverseLayoversPage() {
     });
 
     try {
+      // Fetch data from the backend API
       const response = await fetch(`http://${config.server_host}:${config.server_port}/multi-leg-flights-with-diverse-dining?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       const data = await response.json();
       setResults(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -45,6 +49,7 @@ export default function DiverseLayoversPage() {
 
   return (
     <div>
+      {/* Page header with navbar */}
       <PageNavbar active="diverse-dining-layovers" />
       <Container sx={{ padding: '2rem' }}>
         {/* Title Box */}
@@ -75,7 +80,7 @@ export default function DiverseLayoversPage() {
           </Typography>
         </Box>
 
-        {/* Sliders Section */}
+        {/* Filter Sliders Section */}
         <Divider sx={{ my: 4, borderColor: 'transparent' }} />
         <Grid container spacing={3} sx={{ mb: 2 }}>
           {/* Minimum Layover Duration Slider */}
@@ -192,7 +197,7 @@ export default function DiverseLayoversPage() {
           </Alert>
         )}
 
-        {/* Loading State */}
+        {/* Loading Indicator and Results Table */}
         {loading ? (
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <CircularProgress />
