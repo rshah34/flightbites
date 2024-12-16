@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
-
+// Default export function for the "Top Three City Flight Paths" page
 export default function TopThreeCityPathsPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ export default function TopThreeCityPathsPage() {
   useEffect(() => {
     fetchTopPaths();
   }, []);
-
+  // Function to fetch top cities with best 3-city paths in terms of highly rated restaurants
   const fetchTopPaths = async () => {
     try {
       setLoading(true);

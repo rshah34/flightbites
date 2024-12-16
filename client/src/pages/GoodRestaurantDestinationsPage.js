@@ -17,7 +17,7 @@ import {
   Box,
 } from '@mui/material';
 const config = require('../config.json');
-
+// State variables for form inputs and application state
 export default function GoodRestaurantDestinationsPage() {
   const [originCity, setOriginCity] = useState('');
   const [minStars, setMinStars] = useState(4.0);
@@ -37,6 +37,7 @@ export default function GoodRestaurantDestinationsPage() {
     });
 
     try {
+      // Fetch data from the server using the specified query parameters
       const response = await fetch(`http://${config.server_host}:${config.server_port}/good-restaurant-destinations?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -53,19 +54,28 @@ export default function GoodRestaurantDestinationsPage() {
 
   return (
     <div>
+      {/* Navigation bar */}
       <PageNavbar active="good-restaurant-destinations" />
+
+      {/* Main container */}
       <Container sx={{ display: 'flex', flexDirection: 'column', height: '90vh' }}>
+        {/* Filter section */}
         <Box sx={{ width: '100%', p: 3, bgcolor: 'white', borderRadius: 2, boxShadow: 2, mb: 2 }}>
-          <Typography variant="h4" gutterBottom>Find Good Restaurant Destinations</Typography>
+          <Typography variant="h4" gutterBottom>
+            Find Good Restaurant Destinations
+          </Typography>
           <Grid container spacing={3} sx={{ mb: 2 }}>
+            {/* Input for Origin City */}
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Origin City"
                 value={originCity}
-                onChange={(e) => setOriginCity(e.target.value)}
+                onChange={(e) => setOriginCity(e.target.value)} // Update originCity state on change
               />
             </Grid>
+
+            {/* Slider for Minimum Restaurant Rating */}
             <Grid item xs={12} md={4}>
               <Typography gutterBottom>Minimum Restaurant Rating</Typography>
               <Slider
@@ -73,10 +83,12 @@ export default function GoodRestaurantDestinationsPage() {
                 min={3.0}
                 max={5.0}
                 step={0.1}
-                onChange={(e, val) => setMinStars(val)}
+                onChange={(e, val) => setMinStars(val)} // Update minStars state on change
                 valueLabelDisplay="auto"
               />
             </Grid>
+
+            {/* Slider for Minimum Number of Restaurants */}
             <Grid item xs={12} md={4}>
               <Typography gutterBottom>Minimum Number of Restaurants</Typography>
               <Slider
@@ -84,29 +96,34 @@ export default function GoodRestaurantDestinationsPage() {
                 min={1}
                 max={20}
                 step={1}
-                onChange={(e, val) => setMinRestaurants(val)}
+                onChange={(e, val) => setMinRestaurants(val)} // Update minRestaurants state on change
                 valueLabelDisplay="auto"
               />
             </Grid>
+
+            {/* Submit button */}
             <Grid item xs={12}>
               <Button variant="contained" onClick={searchDestinations} disabled={loading}>
-                {loading ? 'Searching...' : 'Search'}
+                {loading ? 'Searching...' : 'Search'} {/* Dynamic button label */}
               </Button>
             </Grid>
           </Grid>
         </Box>
 
+        {/* Error message */}
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
             {error}
           </Typography>
         )}
 
+        {/* Results table */}
         <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
           <TableContainer component={Paper} sx={{ maxHeight: '100%', overflowY: 'auto' }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
+                  {/* Table headers */}
                   <TableCell>Origin City</TableCell>
                   <TableCell>Connection City</TableCell>
                   <TableCell>Final City</TableCell>
@@ -116,6 +133,7 @@ export default function GoodRestaurantDestinationsPage() {
               </TableHead>
               <TableBody>
                 {results.length > 0 ? (
+                  // Render a row for each result
                   results.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell>{row.origin_city}</TableCell>
@@ -126,6 +144,7 @@ export default function GoodRestaurantDestinationsPage() {
                     </TableRow>
                   ))
                 ) : (
+                  // Display a message when no results are found
                   <TableRow>
                     <TableCell colSpan={5} align="center">
                       No results found
@@ -140,3 +159,4 @@ export default function GoodRestaurantDestinationsPage() {
     </div>
   );
 }
+

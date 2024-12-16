@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
-
+// Default export function for the "Three-City Food Tour Routes" page
 export default function ThreeCityFlightRoutesPage() {
   const [minStars, setMinStars] = useState(3.5);
   const [minRestaurants, setMinRestaurants] = useState(3);
@@ -13,7 +13,7 @@ export default function ThreeCityFlightRoutesPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  // Function to fetch three-city food tour routes
   const searchRoutes = async () => {
     setLoading(true);
     setError(null);

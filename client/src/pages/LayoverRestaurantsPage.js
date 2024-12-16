@@ -18,7 +18,7 @@ import {
   Box, 
 } from '@mui/material';
 const config = require('../config.json');
-
+// State variables for form inputs and application state
 export default function LayoverRestaurantsPage() {
   const [originCity, setOriginCity] = useState('');
   const [destinationCity, setDestinationCity] = useState('');
@@ -27,6 +27,7 @@ export default function LayoverRestaurantsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Function to fetch layover restaurant data
   const searchLayovers = async () => {
     setLoading(true);
     setError(null);
@@ -38,6 +39,7 @@ export default function LayoverRestaurantsPage() {
     });
 
     try {
+      // Fetch data from the server
       const response = await fetch(`http://${config.server_host}:${config.server_port}/layover-restaurants?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -55,61 +57,76 @@ export default function LayoverRestaurantsPage() {
 
   return (
     <div>
+      {/* Navigation bar */}
       <PageNavbar active="layover-restaurants" />
+
+      {/* Main container */}
       <Container sx={{ display: 'flex', flexDirection: 'column', height: '90vh' }}>
+        {/* Form section for user inputs */}
         <Box sx={{ width: '100%', p: 3, bgcolor: 'white', borderRadius: 2, boxShadow: 2, mb: 4 }}>
           <Typography variant="h4" gutterBottom>Find Restaurants During Layovers</Typography>
           <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Input for Origin City */}
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Origin City"
                 value={originCity}
-                onChange={(e) => setOriginCity(e.target.value)}
+                onChange={(e) => setOriginCity(e.target.value)} // Update origin city state
               />
             </Grid>
+
+            {/* Input for Destination City */}
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Destination City"
                 value={destinationCity}
-                onChange={(e) => setDestinationCity(e.target.value)}
+                onChange={(e) => setDestinationCity(e.target.value)} // Update destination city state
               />
             </Grid>
+
+            {/* Input for Minimum Layover Duration */}
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 type="number"
                 label="Minimum Layover (minutes)"
                 value={minLayover}
-                onChange={(e) => setMinLayover(e.target.value)}
+                onChange={(e) => setMinLayover(e.target.value)} // Update layover duration state
               />
             </Grid>
+
+            {/* Search Button */}
             <Grid item xs={12}>
               <Button 
                 variant="contained" 
-                onClick={searchLayovers}
-                disabled={loading}
+                onClick={searchLayovers} 
+                disabled={loading} // Disable button while loading
               >
-                {loading ? 'Searching...' : 'Search'}
+                {loading ? 'Searching...' : 'Search'} {/* Show loading state in button */}
               </Button>
             </Grid>
           </Grid>
         </Box>
 
+        {/* Error alert */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
+        {/* Loading indicator */}
         {loading ? (
           <CircularProgress />
         ) : (
+          // Results table
           <TableContainer component={Paper} sx={{ maxHeight: 500 }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
+                  {/* Table headers */}
                   <TableCell>Layover City</TableCell>
                   <TableCell>Restaurant Name</TableCell>
                   <TableCell>Rating</TableCell>
@@ -120,6 +137,7 @@ export default function LayoverRestaurantsPage() {
               </TableHead>
               <TableBody>
                 {results.length > 0 ? (
+                  // Render a row for each result
                   results.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell>{row.layover_city}</TableCell>
@@ -131,6 +149,7 @@ export default function LayoverRestaurantsPage() {
                     </TableRow>
                   ))
                 ) : (
+                  // Show a message if no results are found
                   <TableRow>
                     <TableCell colSpan={6} align="center">
                       No results found

@@ -3,6 +3,7 @@ import { Container, Grid, Button, Slider, Typography, Paper, Table, Divider, Tab
 import PageNavbar from '../components/PageNavbar';
 const config = require('../config.json');
 
+// Default export function for the "Open Restaurants Page"
 export default function OpenRestaurantsPage() {
   const [minOpenRestaurants, setMinOpenRestaurants] = useState(1);
   const [minAvgRating, setMinAvgRating] = useState(3.0);
@@ -10,6 +11,7 @@ export default function OpenRestaurantsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Function to fetch open restaurant data from the server 
   const searchRestaurants = async () => {
     setLoading(true);
     setError(null);
