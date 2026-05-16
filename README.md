@@ -1,19 +1,19 @@
-# CIS5500-Project
+# FlightBites
 One of the biggest reasons people travel to different cities is to try the various cuisines available away from home. Another common situation is when travelers are in other cities for work or layovers and need a place to eat. In both cases, a website that combines flight information with restaurants would be useful for making plans and decisions easier. The project aims to allow people to search for their favorite cuisines or the highest-rated restaurants open between their domestic flights.
 
 Files:
-- cleanAirlines.py : Python script for cleaning the IBM Reporting Carrier On-Time Performance Dataset for relevant information on common flights. 
-- cleanedRestaurant.ipynb : script for cleaning the Yelp Open Dataset for relevant restaurant data
+- `cleanAirlines.py`: Python script for cleaning the IBM Reporting Carrier On-Time Performance Dataset for relevant information on common flights. 
+- `cleanedRestaurant.ipynb`: script for cleaning the Yelp Open Dataset for relevant restaurant data
 
 ## To run web app:
 
-Run npm install in the client and server files.
+Run `npm install` in the client and server files.
 
-To start the frontend, cd into the client folder and run npm start
+To start the frontend, cd into the client folder and run `npm start`
 
-To start the backend, cd into the server folder and run node index.js
+To start the backend, cd into the server folder and run `node index.js`
 
-Then, navigate to localhost and the web app should be running with the backend connected.
+Then, navigate to localhost, and the web app should be running with the backend connected.
 
 ## List of dependencies:
 
